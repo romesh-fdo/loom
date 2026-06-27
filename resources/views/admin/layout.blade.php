@@ -1,18 +1,10 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-bs-theme="dark">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Admin') — {{ config('app.name', 'Loom') }}</title>
-
-    <script>
-        (function () {
-            var stored = localStorage.getItem('admin-theme');
-            var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            document.documentElement.setAttribute('data-bs-theme', theme);
-        })();
-    </script>
 
     @vite(['resources/css/admin.css', 'resources/js/admin.js'])
 </head>
@@ -49,11 +41,6 @@
             <h1 class="admin-topbar-title">@yield('page-title', 'Dashboard')</h1>
 
             <div class="admin-topbar-actions">
-                <button class="admin-topbar-btn" id="theme-toggle" aria-label="Toggle theme" data-bs-toggle="tooltip" title="Toggle theme">
-                    <i class="bi bi-sun-fill theme-icon-light"></i>
-                    <i class="bi bi-moon-fill theme-icon-dark"></i>
-                </button>
-
                 <button class="admin-topbar-btn" aria-label="Notifications" data-bs-toggle="tooltip" title="Notifications">
                     <i class="bi bi-bell"></i>
                     <span class="badge-dot"></span>

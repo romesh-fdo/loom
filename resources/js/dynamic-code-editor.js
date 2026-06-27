@@ -175,8 +175,6 @@ function createDynamicCodeEditor(root) {
     let stashedContextSelection = null;
     let editingParameterName = null;
 
-    const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
-
     const editor = new EditorView({
         state: EditorState.create({
             doc: initial.template,
@@ -250,7 +248,7 @@ function createDynamicCodeEditor(root) {
                         fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                     },
                 }),
-                ...(isDark ? [oneDark] : []),
+                oneDark,
             ],
         }),
         parent: mount,

@@ -18,7 +18,7 @@
         </button>
         <div class="dropdown-menu w-100 p-2 plugin-builder-icon-picker__menu">
             <input type="search"
-                   class="form-control form-control-sm mb-2"
+                   class="form-control mb-2"
                    placeholder="Search icons…"
                    data-plugin-builder-icon-search
                    autocomplete="off">

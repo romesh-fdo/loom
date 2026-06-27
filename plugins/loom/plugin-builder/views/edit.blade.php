@@ -10,7 +10,7 @@
         </div>
         <div class="admin-panel-body p-4">
             @if (session('migrate_output'))
-                <pre class="small bg-light border rounded p-3 mb-3">{{ session('migrate_output') }}</pre>
+                <pre class="small admin-terminal-output p-3 mb-3">{{ session('migrate_output') }}</pre>
             @endif
 
             @include('loom-plugin-builder::_form', [

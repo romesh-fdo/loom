@@ -50,24 +50,24 @@
     $validationRules = is_array($validationRules) ? $validationRules : [];
 @endphp
 
-<div class="card mb-3" data-plugin-builder-field data-index="{{ $index }}">
+<div class="card plugin-builder-field" data-plugin-builder-field data-index="{{ $index }}">
     <div class="card-body">
-        <div class="row g-2 align-items-end">
+        <div class="row g-2 align-items-end plugin-builder-field__labels">
             <div class="col-md-3">
                 <label class="form-label small">Label</label>
-                <input type="text" name="fields[{{ $index }}][label]" class="form-control form-control-sm"
+                <input type="text" name="fields[{{ $index }}][label]" class="form-control"
                        value="{{ $field['label'] ?? '' }}" required
                        data-plugin-builder-field-label>
             </div>
             <div class="col-md-3">
                 <label class="form-label small">Field name</label>
-                <input type="text" name="fields[{{ $index }}][name]" class="form-control form-control-sm font-monospace"
+                <input type="text" name="fields[{{ $index }}][name]" class="form-control font-monospace"
                        value="{{ $field['name'] ?? '' }}" pattern="[a-z][a-z0-9_]*" required
                        data-plugin-builder-field-name>
             </div>
             <div class="col-md-3">
                 <label class="form-label small">Type</label>
-                <select name="fields[{{ $index }}][type]" class="form-select form-select-sm" required>
+                <select name="fields[{{ $index }}][type]" class="form-select" required>
                     @foreach ($fieldTypes as $typeKey => $typeLabel)
                         <option value="{{ $typeKey }}" @selected(($field['type'] ?? 'text') === $typeKey)>{{ $typeLabel }}</option>
                     @endforeach
@@ -94,14 +94,14 @@
                         <div class="col-md-5">
                             <input type="text"
                                    name="fields[{{ $index }}][validation_rules][{{ $ruleIndex }}][rule]"
-                                   class="form-control form-control-sm font-monospace"
+                                   class="form-control font-monospace"
                                    value="{{ $ruleEntry['rule'] ?? '' }}"
                                    placeholder="required">
                         </div>
                         <div class="col-md-6">
                             <input type="text"
                                    name="fields[{{ $index }}][validation_rules][{{ $ruleIndex }}][message]"
-                                   class="form-control form-control-sm"
+                                   class="form-control"
                                    value="{{ $ruleEntry['message'] ?? '' }}"
                                    placeholder="Custom message (optional)">
                         </div>

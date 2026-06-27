@@ -80,22 +80,23 @@
         </div>
     </div>
 
-    <div class="plugin-builder-fields-section">
-        <div class="d-flex justify-content-between align-items-center mb-2">
+    <div class="card plugin-builder-fields-card mb-4">
+        <div class="card-header plugin-builder-fields-card__header">
             <h3 class="h6 mb-0">Fields</h3>
             <button type="button" class="btn btn-sm btn-outline-primary" data-plugin-builder-add-field>
                 <i class="bi bi-plus-lg"></i> Add field
             </button>
         </div>
-
-        <div data-plugin-builder-fields>
-            @foreach (old('fields', $fields) as $index => $field)
-                @include('loom-plugin-builder::_field-row', [
-                    'index' => $index,
-                    'field' => $field,
-                    'fieldTypes' => $fieldTypes,
-                ])
-            @endforeach
+        <div class="card-body">
+            <div class="plugin-builder-fields-list" data-plugin-builder-fields>
+                @foreach (old('fields', $fields) as $index => $field)
+                    @include('loom-plugin-builder::_field-row', [
+                        'index' => $index,
+                        'field' => $field,
+                        'fieldTypes' => $fieldTypes,
+                    ])
+                @endforeach
+            </div>
         </div>
     </div>
 
@@ -118,13 +119,13 @@
             <div class="col-md-5">
                 <input type="text"
                        name="fields[__INDEX__][validation_rules][__RULE_INDEX__][rule]"
-                       class="form-control form-control-sm font-monospace"
+                       class="form-control font-monospace"
                        placeholder="required">
             </div>
             <div class="col-md-6">
                 <input type="text"
                        name="fields[__INDEX__][validation_rules][__RULE_INDEX__][message]"
-                       class="form-control form-control-sm"
+                       class="form-control"
                        placeholder="Custom message (optional)">
             </div>
             <div class="col-md-1 text-end">

@@ -6,20 +6,6 @@ import { html } from '@codemirror/lang-html';
 import { javascript } from '@codemirror/lang-javascript';
 import { oneDark } from '@codemirror/theme-one-dark';
 
-const THEME_KEY = 'admin-theme';
-
-function getPreferredTheme() {
-    const stored = localStorage.getItem(THEME_KEY);
-    if (stored) return stored;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
-
-function setTheme(theme) {
-    document.documentElement.setAttribute('data-bs-theme', theme);
-    localStorage.setItem(THEME_KEY, theme);
-    document.dispatchEvent(new CustomEvent('admin-theme-changed', { detail: { theme } }));
-}
-
 function getCodeLanguage(language) {
     if (language === 'javascript' || language === 'js') {
         return javascript();
@@ -38,7 +24,6 @@ function initCodeEditors() {
         }
 
         const language = mount.dataset.language || 'html';
-        const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
         const isDisabled = mount.dataset.disabled === 'true';
         const isReadonly = mount.dataset.readonly === 'true';
 
@@ -62,27 +47,13 @@ function initCodeEditors() {
                         fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                     },
                 }),
-                ...(isDark ? [oneDark] : []),
+                oneDark,
             ],
             parent: mount,
         });
 
         mount.dataset.initialized = 'true';
         mount.editorView = editor;
-    });
-
-    document.addEventListener('admin-theme-changed', () => {
-        window.location.reload();
-    });
-}
-
-function initThemeToggle() {
-    const toggle = document.getElementById('theme-toggle');
-    if (!toggle) return;
-
-    toggle.addEventListener('click', () => {
-        const current = document.documentElement.getAttribute('data-bs-theme');
-        setTheme(current === 'dark' ? 'light' : 'dark');
     });
 }
 
@@ -341,8 +312,6 @@ function initRepeaters() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    setTheme(getPreferredTheme());
-    initThemeToggle();
     initSidebar();
     initNavGroups();
     initCodeEditors();

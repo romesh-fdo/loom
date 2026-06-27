@@ -48,23 +48,22 @@
         },
         "code": {
             "section": "block",
-            "type": "code",
+            "type": "dynamic_code",
             "label": "Code",
             "id": "field-code",
-            "class": "form-control d-none",
+            "class": "d-none",
             "wrapperClass": "mb-0",
             "colClass": "col-12",
             "labelClass": "form-label",
-            "help": "HTML or Blade snippet for this block",
+            "help": "HTML template for this block. Highlight text, right-click, and choose Make dynamic to add editable parameters.",
             "required": true,
             "disabled": false,
             "readonly": false,
-            "rows": 12,
             "attributes": {
                 "data-language": "html",
                 "spellcheck": "false"
             },
-            "validation": ["required", "string"]
+            "validation": ["required", "json"]
         }
     }
 }

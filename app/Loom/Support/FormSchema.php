@@ -49,6 +49,23 @@ class FormSchema
                         ?? ($fields[$name]['value'] ?? []);
 
                     $fields[$name]['value'] = old($name, is_array($default) ? $default : []);
+                } elseif ($fieldType === 'dynamic_code') {
+                    $default = $values[$name]
+                        ?? (is_object($model) ? ($model->{$name} ?? null) : null)
+                        ?? ($fields[$name]['value'] ?? ['template' => '', 'parameters' => []]);
+
+                    $resolved = old($name, $default);
+
+                    if (is_string($resolved)) {
+                        $decoded = json_decode($resolved, true);
+                        $resolved = json_last_error() === JSON_ERROR_NONE && is_array($decoded)
+                            ? $decoded
+                            : ['template' => $resolved, 'parameters' => []];
+                    }
+
+                    $fields[$name]['value'] = is_array($resolved)
+                        ? $resolved
+                        : ['template' => '', 'parameters' => []];
                 } else {
                     $default = $values[$name]
                         ?? (is_object($model) ? ($model->{$name} ?? null) : null)
@@ -303,6 +320,7 @@ class FormSchema
                 'select' => 'form-select',
                 'checkbox', 'radio' => 'form-check-input',
                 'code' => 'form-control d-none',
+                'dynamic_code' => 'd-none',
                 'color' => 'form-control form-control-color',
                 default => 'form-control',
             };

@@ -27,6 +27,7 @@
             "Loom\\Providers\\": "app/Loom/Providers/",
             "Loom\\Console\\": "app/Loom/Console/",
             "Loom\\Http\\": "app/Loom/Http/",
+            "Loom\\Builder\\": "app/Loom/Builder/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
         }

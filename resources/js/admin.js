@@ -1,4 +1,6 @@
 import * as bootstrap from 'bootstrap';
+import { initDynamicCodeEditors } from './dynamic-code-editor';
+import { initPluginBuilder } from './plugin-builder';
 import { EditorView, basicSetup } from 'codemirror';
 import { html } from '@codemirror/lang-html';
 import { javascript } from '@codemirror/lang-javascript';
@@ -344,6 +346,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initSidebar();
     initNavGroups();
     initCodeEditors();
+    initDynamicCodeEditors();
+    initPluginBuilder();
     initFilePreviews();
     initRepeaters();
 

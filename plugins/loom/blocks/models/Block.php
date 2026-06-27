@@ -2,18 +2,15 @@
 
 namespace Loom\Blocks\Models;
 
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Loom\Blocks\Models\Generated\BlockSchema;
 
-#[Fillable(['name', 'code', 'config'])]
 class Block extends Model
 {
-    protected $table = 'blocks';
+    use BlockSchema;
 
     protected function casts(): array
     {
-        return [
-            'config' => 'array',
-        ];
+        return static::loomCasts();
     }
 }

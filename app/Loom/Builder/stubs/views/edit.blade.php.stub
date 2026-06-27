@@ -1,0 +1,13 @@
+@extends('admin.layout')
+
+@section('title', 'Edit {{ label }}')
+@section('page-title', 'Edit {{ label }}')
+
+@section('content')
+    <div class="admin-panel">
+        @include('{{ viewNamespace }}::_panel-header', ['panelTitle' => 'Edit {{ label }}'])
+        <div class="admin-panel-body p-4">
+            @include('{{ viewNamespace }}::_form')
+        </div>
+    </div>
+@endsection

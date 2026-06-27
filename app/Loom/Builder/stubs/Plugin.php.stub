@@ -1,0 +1,43 @@
+<?php
+
+namespace Loom\{{ namespace }};
+
+use Loom\System\PluginBase;
+
+class Plugin extends PluginBase
+{
+    public function pluginDetails(): array
+    {
+        return [
+            'name' => '{{ label }}',
+            'description' => 'Manage {{ label }} for Loom CMS',
+            'author' => 'Loom',
+            'version' => '1.0.0',
+        ];
+    }
+
+    public function registerNavigation(): array
+    {
+        return [
+            [
+                'label' => '{{ label }}',
+                'url' => route('loom.{{ route }}.index'),
+                'route' => 'loom.{{ route }}.*',
+                'icon' => '{{ icon }}',
+                'order' => 200,
+                'parent' => [
+                    'label' => 'Content',
+                    'icon' => 'bi-file-earmark-text-fill',
+                    'order' => 100,
+                ],
+            ],
+        ];
+    }
+
+    public function registerForms(): array
+    {
+        return [
+            {{ registerForms }}
+        ];
+    }
+}

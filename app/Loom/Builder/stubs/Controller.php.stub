@@ -1,0 +1,59 @@
+<?php
+
+namespace Loom\{{ namespace }}\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\View\View;
+use Loom\{{ namespace }}\Models\{{ model }};
+use Loom\Http\Controllers\FormResourceController;
+
+class {{ controller }} extends FormResourceController
+{
+    public function index(Request $request): View
+    {
+        $search = $request->string('q')->trim();
+        $perPage = (int) ($this->plugin()->getConfig('per_page', 12) ?? 12);
+        $searchField = $this->plugin()->getConfig('search_field', 'name');
+
+        $records = {{ model }}::query()
+            ->when($search->isNotEmpty(), fn ($query) => $query->where($searchField, 'like', "%{$search}%"))
+            ->latest()
+            ->paginate($perPage)
+            ->withQueryString();
+
+        return view('{{ viewNamespace }}::index', [
+            '{{ routeKey }}s' => $records,
+            'search' => $search->toString(),
+        ]);
+    }
+
+    protected function pluginId(): string
+    {
+        return 'loom.{{ pluginSlug }}';
+    }
+
+    protected function modelClass(): string
+    {
+        return {{ model }}::class;
+    }
+
+    protected function viewNamespace(): string
+    {
+        return '{{ viewNamespace }}';
+    }
+
+    protected function routeModelKey(): string
+    {
+        return '{{ routeKey }}';
+    }
+
+    protected function indexRoute(): string
+    {
+        return 'loom.{{ route }}.index';
+    }
+
+    protected function resourceLabel(): string
+    {
+        return '{{ label }}';
+    }
+}

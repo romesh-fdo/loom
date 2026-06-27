@@ -23,7 +23,7 @@
                 @forelse (${{ routeKey }}s as ${{ routeKey }})
                     <div class="col-sm-6 col-lg-4">
                         <div class="stat-card h-100">
-                            <p class="stat-card-label mb-1">{{ ${{ routeKey }}->name ?? ('#' . ${{ routeKey }}->id) }}</p>
+                            <p class="stat-card-label mb-1">{{ ${{ routeKey }}->{{ listField }} ?: ('#' . ${{ routeKey }}->id) }}</p>
                             <p class="text-muted small mb-3">Updated {{ ${{ routeKey }}->updated_at->diffForHumans() }}</p>
                             <a href="{{ route('loom.{{ route }}.edit', ${{ routeKey }}) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
                         </div>

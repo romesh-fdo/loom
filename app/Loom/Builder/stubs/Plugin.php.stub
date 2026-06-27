@@ -25,11 +25,6 @@ class Plugin extends PluginBase
                 'route' => 'loom.{{ route }}.*',
                 'icon' => '{{ icon }}',
                 'order' => 200,
-                'parent' => [
-                    'label' => 'Content',
-                    'icon' => 'bi-file-earmark-text-fill',
-                    'order' => 100,
-                ],
             ],
         ];
     }

@@ -2,6 +2,8 @@
 
 namespace Loom\Builder;
 
+use Illuminate\Support\Facades\Schema;
+
 class BlueprintDiff
 {
     public function __construct(
@@ -59,8 +61,18 @@ class BlueprintDiff
         }
 
         $existingColumns = $this->importer->existingTableColumns($blueprint);
-        $isCreate = $blueprint->isNewPlugin() && $existingColumns === [];
-        $migrationFiles = $this->migrations->generate($blueprint, $existingColumns, $isCreate);
+        $columnSqlTypes = $this->importer->existingColumnSqlTypes($blueprint);
+        $isCreate = ! Schema::hasTable($blueprint->tableName());
+        $previousFields = $blueprint->isNewPlugin()
+            ? []
+            : $this->importer->import($blueprint->identifier())->modelFields();
+        $migrationFiles = $this->migrations->generate(
+            $blueprint,
+            $existingColumns,
+            $isCreate,
+            $previousFields,
+            $columnSqlTypes
+        );
 
         foreach ($migrationFiles as $relative => $content) {
             $files[] = [
@@ -83,17 +95,6 @@ class BlueprintDiff
             }
         }
 
-        if (! $blueprint->isNewPlugin()) {
-            $imported = $this->importer->import($blueprint->identifier());
-            $importedNames = $this->fieldNames($imported);
-            $blueprintNames = $this->fieldNames($blueprint);
-            $removed = array_diff($importedNames, $blueprintNames);
-
-            foreach ($removed as $name) {
-                $warnings[] = "Field \"{$name}\" was removed from the blueprint. Column removal is not supported in v1.";
-            }
-        }
-
         return [
             'files' => $files,
             'warnings' => $warnings,
@@ -107,22 +108,6 @@ class BlueprintDiff
     protected function scaffoldFiles(Blueprint $blueprint): array
     {
         return app(PluginScaffolder::class)->scaffoldFiles($blueprint);
-    }
-
-    /**
-     * @return list<string>
-     */
-    protected function fieldNames(Blueprint $blueprint): array
-    {
-        $names = [];
-
-        foreach ($blueprint->forms() as $form) {
-            foreach ($form['fields'] ?? [] as $field) {
-                $names[] = $field['name'];
-            }
-        }
-
-        return $names;
     }
 
     protected function truncate(string $content, int $length = 600): string

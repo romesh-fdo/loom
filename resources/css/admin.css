@@ -10,8 +10,7 @@
     --admin-sidebar-border: #e5e5e5;
     --admin-sidebar-text: #737373;
     --admin-sidebar-text-hover: #171717;
-    --admin-sidebar-text-active: #ffffff;
-    --admin-sidebar-active-bg: #171717;
+    --admin-sidebar-text-active: #171717;
     --admin-sidebar-hover-bg: #f5f5f5;
     --admin-content-bg: #f8f8f8;
     --admin-card-bg: #ffffff;
@@ -28,8 +27,7 @@
     --admin-sidebar-border: #262626;
     --admin-sidebar-text: #a3a3a3;
     --admin-sidebar-text-hover: #fafafa;
-    --admin-sidebar-text-active: #0a0a0a;
-    --admin-sidebar-active-bg: #fafafa;
+    --admin-sidebar-text-active: #fafafa;
     --admin-sidebar-hover-bg: #171717;
     --admin-content-bg: #0d0d0d;
     --admin-card-bg: #222222;
@@ -106,7 +104,13 @@ body {
 
 .admin-nav-link.active {
     color: var(--admin-sidebar-text-active);
-    background: var(--admin-sidebar-active-bg);
+    background: transparent;
+    font-weight: 600;
+}
+
+.admin-nav-link.active:hover {
+    color: var(--admin-sidebar-text-active);
+    background: transparent;
 }
 
 .admin-nav-link i {
@@ -262,8 +266,8 @@ body {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: var(--admin-sidebar-active-bg);
-    color: var(--admin-sidebar-text-active);
+    background: var(--admin-sidebar-text-hover);
+    color: var(--admin-sidebar-bg);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1060,4 +1064,107 @@ body {
     .admin-sidebar-overlay.show {
         display: block;
     }
+}
+
+.plugin-builder-icon-picker__menu {
+    min-width: 100%;
+    max-height: 22rem;
+}
+
+.plugin-builder-icon-picker__list {
+    max-height: 16rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.plugin-builder-icon-picker__option {
+    display: grid;
+    grid-template-columns: 1.5rem 1fr;
+    grid-template-rows: auto auto;
+    gap: 0 0.65rem;
+    align-items: center;
+    width: 100%;
+    border: 0;
+    border-radius: 0.375rem;
+    background: transparent;
+    padding: 0.45rem 0.55rem;
+    text-align: left;
+    color: inherit;
+}
+
+.plugin-builder-icon-picker__option:hover,
+.plugin-builder-icon-picker__option.is-active {
+    background: var(--loom-form-panel-bg);
+}
+
+.plugin-builder-icon-picker__option .bi {
+    grid-row: span 2;
+    font-size: 1.1rem;
+}
+
+.plugin-builder-icon-picker__option-label {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.8rem;
+}
+
+.plugin-builder-icon-picker__option-meta {
+    grid-column: 2;
+    font-size: 0.75rem;
+    color: var(--loom-form-help);
+}
+
+@media (min-width: 992px) {
+    .loom-plugin-builder-form .plugin-builder-fields-section {
+        max-width: 52rem;
+    }
+}
+
+.plugin-builder-save-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: rgba(10, 10, 10, 0.45);
+    backdrop-filter: blur(2px);
+}
+
+.plugin-builder-save-overlay[hidden] {
+    display: none;
+}
+
+.plugin-builder-save-overlay__card {
+    width: min(28rem, 100%);
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--loom-form-border);
+    background: var(--loom-form-field-bg);
+    box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.18);
+}
+
+.plugin-builder-save-overlay__title {
+    margin: 0 0 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--loom-form-label);
+}
+
+.plugin-builder-save-overlay__progress {
+    height: 0.65rem;
+    background: var(--loom-form-panel-bg);
+}
+
+.plugin-builder-save-overlay__progress .progress-bar {
+    background: var(--loom-form-btn-primary-bg);
+    transition: width 0.45s ease;
+}
+
+.plugin-builder-save-overlay__step {
+    margin: 0.85rem 0 0;
+    font-size: 0.875rem;
+    color: var(--loom-form-help);
 }

@@ -19,4 +19,6 @@ return [
         'route_prefix' => 'admin',
         'route_name_prefix' => 'loom.',
     ],
+
+    'table_prefix' => env('LOOM_TABLE_PREFIX', 'loom_'),
 ];

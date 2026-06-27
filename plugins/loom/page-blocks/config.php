@@ -2,5 +2,5 @@
 
 return [
     'per_page' => 12,
-    'search_field' => '{{ listField }}',
+    'search_field' => 'block_name',
 ];

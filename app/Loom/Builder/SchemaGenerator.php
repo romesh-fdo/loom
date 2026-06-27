@@ -2,6 +2,8 @@
 
 namespace Loom\Builder;
 
+use Illuminate\Support\Str;
+
 class SchemaGenerator
 {
     /**
@@ -9,19 +11,15 @@ class SchemaGenerator
      */
     public function generate(Blueprint $blueprint): array
     {
-        $files = [];
         $modelFields = $blueprint->modelFields();
-        $configFields = $blueprint->configFields();
 
-        if ($modelFields !== []) {
-            $files['schemas/basic.json'] = $this->encode($this->buildBasicSchema($blueprint, $modelFields));
+        if ($modelFields === []) {
+            return [];
         }
 
-        if ($configFields !== []) {
-            $files['schemas/configuration.json'] = $this->encode($this->buildConfigurationSchema($blueprint, $configFields));
-        }
-
-        return $files;
+        return [
+            'schemas/basic.json' => $this->encode($this->buildBasicSchema($blueprint, $modelFields)),
+        ];
     }
 
     /**
@@ -66,50 +64,6 @@ class SchemaGenerator
     }
 
     /**
-     * @param  list<array<string, mixed>>  $fields
-     * @return array<string, mixed>
-     */
-    protected function buildConfigurationSchema(Blueprint $blueprint, array $fields): array
-    {
-        $fieldDefs = [];
-        $layoutFields = [];
-        $persisted = [];
-
-        foreach ($fields as $field) {
-            $name = $field['name'];
-            $persisted[] = $name;
-            $fieldDefs[$name] = $this->fieldDefinition($field, 'configuration');
-            $layoutFields[] = ['name' => $name, 'colClass' => $field['colClass'] ?? 'col-md-4'];
-        }
-
-        $rows = array_map(fn (array $chunk) => [
-            'section' => 'configuration',
-            'rowClass' => 'row g-3 mb-3',
-            'fields' => $chunk,
-        ], array_chunk($layoutFields, 3));
-
-        return [
-            'meta' => [
-                'label' => $blueprint->pluginLabel().' configuration',
-                'description' => 'Settings for this '.$blueprint->pluginLabel(),
-                'order' => 5,
-                'layout' => 'modal',
-                'storage' => 'config',
-                'persisted_fields' => $persisted,
-            ],
-            'form' => [
-                'id' => 'loom-'.$blueprint->pluginSlug().'-configuration-form',
-                'class' => 'loom-'.$blueprint->pluginSlug().'-configuration-form',
-                'attributes' => [
-                    'data-loom-form-panel' => 'configuration',
-                ],
-            ],
-            'layout' => $rows,
-            'fields' => $fieldDefs,
-        ];
-    }
-
-    /**
      * @param  array<string, mixed>  $field
      * @return array<string, mixed>
      */
@@ -117,7 +71,7 @@ class SchemaGenerator
     {
         $type = $field['type'] ?? 'text';
         $name = $field['name'];
-        $validation = $field['validation'] ?? FieldTypeRegistry::defaultValidation($type);
+        [$validation, $validationMessages] = $this->resolveValidation($field, $type);
 
         $definition = [
             'section' => $section,
@@ -132,6 +86,10 @@ class SchemaGenerator
             'readonly' => false,
             'validation' => $validation,
         ];
+
+        if ($validationMessages !== []) {
+            $definition['validation_messages'] = $validationMessages;
+        }
 
         $definition['class'] = match ($type) {
             'select' => 'form-select',
@@ -159,6 +117,59 @@ class SchemaGenerator
         }
 
         return $definition;
+    }
+
+    /**
+     * @param  array<string, mixed>  $field
+     * @return array{0: list<string>, 1: array<string, string>}
+     */
+    protected function resolveValidation(array $field, string $type): array
+    {
+        $validation = [];
+        $validationMessages = [];
+
+        foreach ($field['validation_rules'] ?? [] as $entry) {
+            if (! is_array($entry)) {
+                continue;
+            }
+
+            $rule = trim((string) ($entry['rule'] ?? ''));
+
+            if ($rule === '') {
+                continue;
+            }
+
+            $validation[] = $rule;
+
+            $message = trim((string) ($entry['message'] ?? ''));
+
+            if ($message !== '') {
+                $validationMessages[Str::before($rule, ':')] = $message;
+            }
+        }
+
+        if ($validation === []) {
+            $validation = array_values(array_filter(
+                $field['validation'] ?? [],
+                fn ($rule) => is_string($rule) && trim($rule) !== ''
+            ));
+
+            if ($validation === []) {
+                $validation = FieldTypeRegistry::defaultValidation($type);
+            }
+
+            $existingMessages = $field['validation_messages'] ?? [];
+
+            if (is_array($existingMessages)) {
+                foreach ($existingMessages as $key => $message) {
+                    if (is_string($key) && is_string($message) && $message !== '') {
+                        $validationMessages[$key] = $message;
+                    }
+                }
+            }
+        }
+
+        return [$validation, $validationMessages];
     }
 
     protected function encode(array $schema): string

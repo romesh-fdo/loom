@@ -54,7 +54,11 @@ class Blueprint
 
     public function tableName(): string
     {
-        return (string) ($this->definition['model']['table'] ?? Str::snake(Str::plural($this->pluginSlug())));
+        if (! empty($this->definition['model']['table'])) {
+            return (string) $this->definition['model']['table'];
+        }
+
+        return TableNames::defaultForSlug($this->pluginSlug());
     }
 
     public function namespaceStudly(): string

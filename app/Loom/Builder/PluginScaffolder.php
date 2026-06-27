@@ -26,12 +26,14 @@ class PluginScaffolder
             $controller = Str::plural($model).'Controller';
         }
 
-        $hasConfig = $blueprint->hasConfigFields();
+        $hasConfig = $blueprint->hasConfigFields() || file_exists($blueprint->pluginPath().'/schemas/configuration.json');
+        $listField = $blueprint->modelFields()[0]['name'] ?? 'title';
         $registerForms = $hasConfig
             ? "'basic-form' => ['schema' => 'basic'],\n            'configuration-form' => ['schema' => 'configuration'],"
             : "'basic-form' => ['schema' => 'basic'],";
 
         $files = [
+            'plugin.yaml' => app(PluginManifestGenerator::class)->generate($blueprint),
             'Plugin.php' => $this->renderStub('Plugin.php.stub', [
                 'namespace' => $ns,
                 'label' => $label,
@@ -43,7 +45,9 @@ class PluginScaffolder
                 'controllerFqn' => "Loom\\{$ns}\\Controllers\\{$controller}",
                 'route' => $route,
             ]),
-            'config.php' => $this->renderStub('config.php.stub', []),
+            'config.php' => $this->renderStub('config.php.stub', [
+                'listField' => $listField,
+            ]),
             "controllers/{$controller}.php" => $this->renderStub('Controller.php.stub', [
                 'namespace' => $ns,
                 'controller' => $controller,
@@ -53,12 +57,14 @@ class PluginScaffolder
                 'route' => $route,
                 'pluginSlug' => $slug,
                 'label' => Str::singular($label),
+                'listField' => $listField,
             ]),
             'views/index.blade.php' => $this->renderStub('views/index.blade.php.stub', [
                 'viewNamespace' => $viewNs,
                 'label' => $label,
                 'route' => $route,
                 'routeKey' => $routeKey,
+                'listField' => $listField,
             ]),
             'views/create.blade.php' => $this->renderStub('views/create.blade.php.stub', [
                 'viewNamespace' => $viewNs,

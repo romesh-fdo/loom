@@ -18,6 +18,7 @@ class GeneratedModelWriter
 
         $fillableExport = var_export($fillable, true);
         $castsBody = $this->formatCasts($casts);
+        $table = $this->tableName($blueprint);
 
         $traitContent = <<<PHP
 <?php
@@ -28,7 +29,7 @@ trait {$trait}
 {
     public function getTable(): string
     {
-        return '{$blueprint->tableName()}';
+        return '{$table}';
     }
 
     public function initialize{$trait}(): void
@@ -97,7 +98,7 @@ PHP;
             $blueprint->modelFields()
         );
 
-        if ($blueprint->hasConfigFields()) {
+        if ($blueprint->hasConfigFields() || $this->pluginHasConfigurationSchema($blueprint)) {
             $fields[] = 'config';
         }
 
@@ -119,7 +120,7 @@ PHP;
             }
         }
 
-        if ($blueprint->hasConfigFields()) {
+        if ($blueprint->hasConfigFields() || $this->pluginHasConfigurationSchema($blueprint)) {
             $casts['config'] = 'array';
         }
 
@@ -142,5 +143,15 @@ PHP;
         }
 
         return "[\n".implode("\n", $lines)."\n        ]";
+    }
+
+    protected function tableName(Blueprint $blueprint): string
+    {
+        return TableNames::applyPrefix(TableNames::stripPrefix($blueprint->tableName()));
+    }
+
+    protected function pluginHasConfigurationSchema(Blueprint $blueprint): bool
+    {
+        return file_exists($blueprint->pluginPath().'/schemas/configuration.json');
     }
 }

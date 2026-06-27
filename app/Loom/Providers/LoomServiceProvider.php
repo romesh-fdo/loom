@@ -4,6 +4,7 @@ namespace Loom\Providers;
 
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Loom\Builder\SecureFileWriter;
 use Loom\Console\CachePluginsCommand;
 use Loom\Console\ClearPluginsCommand;
 use Loom\System\PluginAutoloader;
@@ -14,6 +15,8 @@ class LoomServiceProvider extends ServiceProvider
     public function register(): void
     {
         PluginAutoloader::register();
+
+        $this->app->singleton(SecureFileWriter::class, fn () => SecureFileWriter::make());
 
         $this->app->singleton(PluginManager::class);
         $this->app->alias(PluginManager::class, 'loom.plugins');

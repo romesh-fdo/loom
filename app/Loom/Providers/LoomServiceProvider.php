@@ -1,0 +1,39 @@
+<?php
+
+namespace Loom\Providers;
+
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\ServiceProvider;
+use Loom\Console\CachePluginsCommand;
+use Loom\Console\ClearPluginsCommand;
+use Loom\System\PluginAutoloader;
+use Loom\System\PluginManager;
+
+class LoomServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        PluginAutoloader::register();
+
+        $this->app->singleton(PluginManager::class);
+        $this->app->alias(PluginManager::class, 'loom.plugins');
+
+        $this->app->make(PluginManager::class)->registerAll();
+    }
+
+    public function boot(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                CachePluginsCommand::class,
+                ClearPluginsCommand::class,
+            ]);
+        }
+
+        $this->app->make(PluginManager::class)->bootAll();
+
+        View::composer('admin.layout', function ($view) {
+            $view->with('adminNavigation', app(PluginManager::class)->getNavigation());
+        });
+    }
+}

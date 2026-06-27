@@ -1,0 +1,70 @@
+{
+    "form": {
+        "id": "loom-block-form",
+        "class": "loom-block-form",
+        "method": "POST",
+        "enctype": "multipart/form-data",
+        "attributes": {
+            "data-loom-form": "blocks-basic",
+            "novalidate": false
+        }
+    },
+    "layout": [
+        {
+            "section": "block",
+            "rowClass": "row g-3 mb-3",
+            "fields": [
+                { "name": "name", "colClass": "col-md-6" }
+            ]
+        },
+        {
+            "section": "block",
+            "rowClass": "row g-3 mb-3",
+            "fields": [
+                { "name": "code", "colClass": "col-12" }
+            ]
+        }
+    ],
+    "fields": {
+        "name": {
+            "section": "block",
+            "type": "text",
+            "label": "Block name",
+            "id": "field-name",
+            "class": "form-control",
+            "wrapperClass": "mb-0",
+            "colClass": "col-md-6",
+            "labelClass": "form-label",
+            "placeholder": "e.g. Hero banner",
+            "help": "A unique, human-readable name for this block",
+            "required": true,
+            "disabled": false,
+            "readonly": false,
+            "attributes": {
+                "autocomplete": "off",
+                "maxlength": "255"
+            },
+            "validation": ["required", "string", "max:255"]
+        },
+        "code": {
+            "section": "block",
+            "type": "code",
+            "label": "Code",
+            "id": "field-code",
+            "class": "form-control d-none",
+            "wrapperClass": "mb-0",
+            "colClass": "col-12",
+            "labelClass": "form-label",
+            "help": "HTML or Blade snippet for this block",
+            "required": true,
+            "disabled": false,
+            "readonly": false,
+            "rows": 12,
+            "attributes": {
+                "data-language": "html",
+                "spellcheck": "false"
+            },
+            "validation": ["required", "string"]
+        }
+    }
+}

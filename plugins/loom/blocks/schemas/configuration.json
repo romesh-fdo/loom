@@ -1,0 +1,171 @@
+{
+    "meta": {
+        "label": "Block configuration",
+        "description": "Layout and appearance settings for this block",
+        "order": 5,
+        "layout": "modal",
+        "storage": "config",
+        "persisted_fields": [
+            "background_color",
+            "margin_top",
+            "margin_bottom",
+            "padding_top",
+            "padding_bottom",
+            "max_width"
+        ]
+    },
+    "form": {
+        "id": "loom-block-configuration-form",
+        "class": "loom-block-configuration-form",
+        "attributes": {
+            "data-loom-form-panel": "configuration"
+        }
+    },
+    "layout": [
+        {
+            "section": "configuration",
+            "rowClass": "row g-3 mb-3",
+            "fields": [
+                { "name": "background_color", "colClass": "col-md-4" },
+                { "name": "margin_top", "colClass": "col-md-4" },
+                { "name": "margin_bottom", "colClass": "col-md-4" }
+            ]
+        },
+        {
+            "section": "configuration",
+            "rowClass": "row g-3 mb-3",
+            "fields": [
+                { "name": "padding_top", "colClass": "col-md-4" },
+                { "name": "padding_bottom", "colClass": "col-md-4" },
+                { "name": "max_width", "colClass": "col-md-4" }
+            ]
+        }
+    ],
+    "fields": {
+        "background_color": {
+            "section": "configuration",
+            "type": "color",
+            "label": "Background color",
+            "id": "field-background-color",
+            "class": "form-control form-control-color",
+            "wrapperClass": "mb-0",
+            "colClass": "col-md-4",
+            "labelClass": "form-label",
+            "help": "Block wrapper background color",
+            "required": false,
+            "disabled": false,
+            "readonly": false,
+            "value": "#ffffff",
+            "attributes": {},
+            "validation": ["nullable", "string", "regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/"]
+        },
+        "margin_top": {
+            "section": "configuration",
+            "type": "number",
+            "label": "Top margin (px)",
+            "id": "field-margin-top",
+            "class": "form-control",
+            "wrapperClass": "mb-0",
+            "colClass": "col-md-4",
+            "labelClass": "form-label",
+            "placeholder": "0",
+            "help": "Space above the block",
+            "required": false,
+            "disabled": false,
+            "readonly": false,
+            "value": "0",
+            "attributes": {
+                "min": "0",
+                "max": "500",
+                "step": "1"
+            },
+            "validation": ["nullable", "integer", "min:0", "max:500"]
+        },
+        "margin_bottom": {
+            "section": "configuration",
+            "type": "number",
+            "label": "Bottom margin (px)",
+            "id": "field-margin-bottom",
+            "class": "form-control",
+            "wrapperClass": "mb-0",
+            "colClass": "col-md-4",
+            "labelClass": "form-label",
+            "placeholder": "0",
+            "help": "Space below the block",
+            "required": false,
+            "disabled": false,
+            "readonly": false,
+            "value": "0",
+            "attributes": {
+                "min": "0",
+                "max": "500",
+                "step": "1"
+            },
+            "validation": ["nullable", "integer", "min:0", "max:500"]
+        },
+        "padding_top": {
+            "section": "configuration",
+            "type": "number",
+            "label": "Top padding (px)",
+            "id": "field-padding-top",
+            "class": "form-control",
+            "wrapperClass": "mb-0",
+            "colClass": "col-md-4",
+            "labelClass": "form-label",
+            "placeholder": "0",
+            "help": "Inner spacing at the top of the block",
+            "required": false,
+            "disabled": false,
+            "readonly": false,
+            "value": "0",
+            "attributes": {
+                "min": "0",
+                "max": "500",
+                "step": "1"
+            },
+            "validation": ["nullable", "integer", "min:0", "max:500"]
+        },
+        "padding_bottom": {
+            "section": "configuration",
+            "type": "number",
+            "label": "Bottom padding (px)",
+            "id": "field-padding-bottom",
+            "class": "form-control",
+            "wrapperClass": "mb-0",
+            "colClass": "col-md-4",
+            "labelClass": "form-label",
+            "placeholder": "0",
+            "help": "Inner spacing at the bottom of the block",
+            "required": false,
+            "disabled": false,
+            "readonly": false,
+            "value": "0",
+            "attributes": {
+                "min": "0",
+                "max": "500",
+                "step": "1"
+            },
+            "validation": ["nullable", "integer", "min:0", "max:500"]
+        },
+        "max_width": {
+            "section": "configuration",
+            "type": "text",
+            "label": "Max width",
+            "id": "field-max-width",
+            "class": "form-control",
+            "wrapperClass": "mb-0",
+            "colClass": "col-md-4",
+            "labelClass": "form-label",
+            "placeholder": "e.g. 1200px or 100%",
+            "help": "Maximum width of the block container",
+            "required": false,
+            "disabled": false,
+            "readonly": false,
+            "value": "100%",
+            "attributes": {
+                "maxlength": "20"
+            },
+            "validation": ["nullable", "string", "max:20"]
+        }
+    }
+}

@@ -14,7 +14,6 @@
         })();
     </script>
 
-    @fonts
     @vite(['resources/css/admin.css', 'resources/js/admin.js'])
 </head>
 <body>
@@ -36,36 +35,8 @@
                 <i class="bi bi-grid-1x2-fill"></i>
                 Dashboard
             </a>
-            {{--
-            <a href="#" class="admin-nav-link">
-                <i class="bi bi-people-fill"></i>
-                Users
-            </a>
 
-            <div class="admin-nav-group" data-nav-group>
-                <button type="button" class="admin-nav-link admin-nav-parent" aria-expanded="true">
-                    <span class="admin-nav-label">
-                        <i class="bi bi-box-seam-fill"></i>
-                        Products
-                    </span>
-                    <i class="bi bi-chevron-down admin-nav-chevron"></i>
-                </button>
-                <div class="admin-nav-children">
-                    <a href="#" class="admin-nav-link admin-nav-child">All Products</a>
-                    <a href="#" class="admin-nav-link admin-nav-child">Categories</a>
-                    <a href="#" class="admin-nav-link admin-nav-child">Inventory</a>
-                </div>
-            </div>
-
-            <a href="#" class="admin-nav-link">
-                <i class="bi bi-cart-fill"></i>
-                Orders
-            </a>
-            <a href="#" class="admin-nav-link">
-                <i class="bi bi-gear-fill"></i>
-                Settings
-            </a>
-            --}}
+            @include('admin.partials.navigation')
         </nav>
     </aside>
 
@@ -107,5 +78,7 @@
             @yield('content')
         </main>
     </div>
+
+    @include('admin.partials.flash-toasts')
 </body>
 </html>

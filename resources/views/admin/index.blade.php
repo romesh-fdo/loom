@@ -11,9 +11,9 @@
                     <div>
                         <p class="stat-card-label mb-1">Total Users</p>
                         <p class="stat-card-value mb-1">2,847</p>
-                        <span class="stat-card-change up"><i class="bi bi-arrow-up-short"></i>12.5%</span>
+                        <span class="stat-card-change"><i class="bi bi-arrow-up-short"></i>12.5%</span>
                     </div>
-                    <div class="stat-card-icon purple">
+                    <div class="stat-card-icon">
                         <i class="bi bi-people-fill"></i>
                     </div>
                 </div>
@@ -25,9 +25,9 @@
                     <div>
                         <p class="stat-card-label mb-1">Revenue</p>
                         <p class="stat-card-value mb-1">$48,290</p>
-                        <span class="stat-card-change up"><i class="bi bi-arrow-up-short"></i>8.2%</span>
+                        <span class="stat-card-change"><i class="bi bi-arrow-up-short"></i>8.2%</span>
                     </div>
-                    <div class="stat-card-icon green">
+                    <div class="stat-card-icon">
                         <i class="bi bi-currency-dollar"></i>
                     </div>
                 </div>
@@ -39,9 +39,9 @@
                     <div>
                         <p class="stat-card-label mb-1">Orders</p>
                         <p class="stat-card-value mb-1">1,429</p>
-                        <span class="stat-card-change up"><i class="bi bi-arrow-up-short"></i>4.1%</span>
+                        <span class="stat-card-change"><i class="bi bi-arrow-up-short"></i>4.1%</span>
                     </div>
-                    <div class="stat-card-icon blue">
+                    <div class="stat-card-icon">
                         <i class="bi bi-cart-fill"></i>
                     </div>
                 </div>
@@ -53,9 +53,9 @@
                     <div>
                         <p class="stat-card-label mb-1">Growth</p>
                         <p class="stat-card-value mb-1">23.6%</p>
-                        <span class="stat-card-change down"><i class="bi bi-arrow-down-short"></i>1.3%</span>
+                        <span class="stat-card-change"><i class="bi bi-arrow-down-short"></i>1.3%</span>
                     </div>
-                    <div class="stat-card-icon orange">
+                    <div class="stat-card-icon">
                         <i class="bi bi-graph-up-arrow"></i>
                     </div>
                 </div>
@@ -88,35 +88,35 @@
                                     <td>Sarah Mitchell</td>
                                     <td>Pro Plan (Annual)</td>
                                     <td>$299.00</td>
-                                    <td><span class="badge bg-success-subtle text-success border border-success-subtle">Completed</span></td>
+                                    <td><span class="badge-status success">Completed</span></td>
                                 </tr>
                                 <tr>
                                     <td><strong>#ORD-7828</strong></td>
                                     <td>James Chen</td>
                                     <td>Starter Kit</td>
                                     <td>$49.00</td>
-                                    <td><span class="badge bg-warning-subtle text-warning border border-warning-subtle">Pending</span></td>
+                                    <td><span class="badge-status warning">Pending</span></td>
                                 </tr>
                                 <tr>
                                     <td><strong>#ORD-7827</strong></td>
                                     <td>Emily Rodriguez</td>
                                     <td>Enterprise License</td>
                                     <td>$1,200.00</td>
-                                    <td><span class="badge bg-success-subtle text-success border border-success-subtle">Completed</span></td>
+                                    <td><span class="badge-status success">Completed</span></td>
                                 </tr>
                                 <tr>
                                     <td><strong>#ORD-7826</strong></td>
                                     <td>Michael Park</td>
                                     <td>Add-on Pack</td>
                                     <td>$79.00</td>
-                                    <td><span class="badge bg-danger-subtle text-danger border border-danger-subtle">Cancelled</span></td>
+                                    <td><span class="badge-status danger">Cancelled</span></td>
                                 </tr>
                                 <tr>
                                     <td><strong>#ORD-7825</strong></td>
                                     <td>Lisa Thompson</td>
                                     <td>Pro Plan (Monthly)</td>
                                     <td>$29.00</td>
-                                    <td><span class="badge bg-primary-subtle text-primary border border-primary-subtle">Processing</span></td>
+                                    <td><span class="badge-status info">Processing</span></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -132,7 +132,7 @@
                 </div>
                 <div class="admin-panel-body">
                     <div class="activity-item">
-                        <div class="activity-icon order">
+                        <div class="activity-icon">
                             <i class="bi bi-cart-check"></i>
                         </div>
                         <div>
@@ -141,7 +141,7 @@
                         </div>
                     </div>
                     <div class="activity-item">
-                        <div class="activity-icon user">
+                        <div class="activity-icon">
                             <i class="bi bi-person-plus"></i>
                         </div>
                         <div>
@@ -150,7 +150,7 @@
                         </div>
                     </div>
                     <div class="activity-item">
-                        <div class="activity-icon payment">
+                        <div class="activity-icon">
                             <i class="bi bi-credit-card"></i>
                         </div>
                         <div>
@@ -159,7 +159,7 @@
                         </div>
                     </div>
                     <div class="activity-item">
-                        <div class="activity-icon alert">
+                        <div class="activity-icon">
                             <i class="bi bi-exclamation-triangle"></i>
                         </div>
                         <div>
@@ -168,7 +168,7 @@
                         </div>
                     </div>
                     <div class="activity-item">
-                        <div class="activity-icon user">
+                        <div class="activity-icon">
                             <i class="bi bi-person-check"></i>
                         </div>
                         <div>

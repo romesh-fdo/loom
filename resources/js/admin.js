@@ -44,10 +44,23 @@ function initSidebar() {
     overlay?.addEventListener('click', closeSidebar);
 }
 
+function initNavGroups() {
+    document.querySelectorAll('[data-nav-group]').forEach((group) => {
+        const toggle = group.querySelector('.admin-nav-parent');
+        if (!toggle) return;
+
+        toggle.addEventListener('click', () => {
+            const isOpen = group.classList.toggle('open');
+            toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     setTheme(getPreferredTheme());
     initThemeToggle();
     initSidebar();
+    initNavGroups();
 
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
         new bootstrap.Tooltip(el);

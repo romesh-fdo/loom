@@ -6,11 +6,14 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Loom\Features\Blocks\Models\Block;
+use Loom\Http\Controllers\Concerns\ScopesToActiveTheme;
 use Loom\Http\Controllers\FormResourceController;
 use Loom\Support\FormSchema;
 
 class BlocksController extends FormResourceController
 {
+    use ScopesToActiveTheme;
+
     private const ALLOWED_PARAMETER_TYPES = [
         'text',
         'textarea',
@@ -26,7 +29,7 @@ class BlocksController extends FormResourceController
         $search = $request->string('q')->trim();
         $perPage = (int) ($this->module()->getConfig('per_page', 12) ?? 12);
 
-        $blocks = Block::query()
+        $blocks = $this->themedQuery()
             ->when($search->isNotEmpty(), fn ($query) => $query->where('name', 'like', "%{$search}%"))
             ->latest()
             ->paginate($perPage)
@@ -55,7 +58,10 @@ class BlocksController extends FormResourceController
             $validated['code'] = json_decode($validated['code'], true);
         }
 
-        return FormSchema::mapValidatedToModel($validated, $formDefinitions, $this->pluginId());
+        return $this->withThemeSlug(
+            FormSchema::mapValidatedToModel($validated, $formDefinitions, $this->pluginId()),
+            $request
+        );
     }
 
     protected function blockCodeStructureRule(): Closure

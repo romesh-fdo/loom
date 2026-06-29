@@ -9,17 +9,20 @@ use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Loom\Features\Blocks\Models\Block;
 use Loom\Features\Pages\Models\Page;
+use Loom\Http\Controllers\Concerns\ScopesToActiveTheme;
 use Loom\Http\Controllers\FormResourceController;
 use Loom\Support\FormSchema;
 
 class PagesController extends FormResourceController
 {
+    use ScopesToActiveTheme;
+
     public function index(Request $request): View
     {
         $search = $request->string('q')->trim();
         $perPage = (int) ($this->module()->getConfig('per_page', 12) ?? 12);
 
-        $pages = Page::query()
+        $pages = $this->themedQuery()
             ->when($search->isNotEmpty(), fn ($query) => $query->where('name', 'like', "%{$search}%"))
             ->latest()
             ->paginate($perPage)
@@ -53,7 +56,9 @@ class PagesController extends FormResourceController
         $pageId = $request->route('page');
         $pageId = $pageId instanceof Page ? $pageId->getKey() : $pageId;
 
-        $rules['url'][] = Rule::unique(Page::query()->getModel()->getTable(), 'url')->ignore($pageId);
+        $rules['url'][] = Rule::unique(Page::query()->getModel()->getTable(), 'url')
+            ->where('theme_slug', $this->activeThemeSlug())
+            ->ignore($pageId);
         $rules['sections'] = ['nullable', 'array', $this->sectionsStructureRule()];
 
         $validated = $request->validate($rules);
@@ -64,7 +69,10 @@ class PagesController extends FormResourceController
 
         $validated['sections'] = $this->normalizeSections($validated['sections'] ?? []);
 
-        return FormSchema::mapValidatedToModel($validated, $formDefinitions, $this->pluginId());
+        return $this->withThemeSlug(
+            FormSchema::mapValidatedToModel($validated, $formDefinitions, $this->pluginId()),
+            $request
+        );
     }
 
     /**
@@ -73,6 +81,7 @@ class PagesController extends FormResourceController
     protected function blocksCatalog(): array
     {
         return Block::query()
+            ->forTheme($this->activeThemeSlug())
             ->orderBy('name')
             ->get()
             ->map(fn (Block $block) => [
@@ -93,7 +102,10 @@ class PagesController extends FormResourceController
                 return;
             }
 
-            $blocksById = Block::query()->get()->keyBy('id');
+            $blocksById = Block::query()
+                ->forTheme($this->activeThemeSlug())
+                ->get()
+                ->keyBy('id');
 
             foreach ($value as $index => $section) {
                 if (! is_array($section)) {

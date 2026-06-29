@@ -1,7 +1,7 @@
 @extends('admin.layout')
 
-@section('title', 'Add theme')
-@section('page-title', 'Add theme')
+@section('title', 'Edit theme')
+@section('page-title', 'Edit theme')
 
 @push('styles')
     @vite(['resources/css/theme-settings.css'])
@@ -10,26 +10,31 @@
 @section('content')
     <div class="admin-panel">
         <div class="admin-panel-header">
-            <h2>Add theme</h2>
+            <h2>Edit theme</h2>
             <a href="{{ route('admin.settings', ['tab' => 'theme']) }}" class="btn btn-sm btn-outline-secondary" aria-label="Back">
                 <i class="bi bi-arrow-left"></i>
             </a>
         </div>
-        <div class="admin-panel-body p-4">
+        <div class="admin-panel-body p-4 theme-edit-body">
             <form method="POST"
-                  action="{{ route('admin.settings.theme.store') }}"
+                  action="{{ route('admin.settings.theme.update', $theme['slug']) }}"
                   enctype="multipart/form-data"
                   class="theme-create-form">
                 @csrf
+                @method('PUT')
 
                 <div class="row g-4">
                     <div class="col-lg-5">
-                        <label for="theme-image" class="theme-upload-zone" id="theme-image-preview" aria-label="Upload image">
-                            <div class="theme-upload-zone-inner">
-                                <span class="theme-upload-icon" aria-hidden="true">
-                                    <i class="bi bi-image"></i>
-                                </span>
-                            </div>
+                        <label for="theme-image" class="theme-upload-zone {{ ! empty($theme['preview_url']) ? 'theme-upload-zone-has-image' : '' }}" id="theme-image-preview" aria-label="Upload image">
+                            @if (! empty($theme['preview_url']))
+                                <img src="{{ $theme['preview_url'] }}" alt="" class="theme-card-image">
+                            @else
+                                <div class="theme-upload-zone-inner">
+                                    <span class="theme-upload-icon" aria-hidden="true">
+                                        <i class="bi bi-image"></i>
+                                    </span>
+                                </div>
+                            @endif
                         </label>
                         <input type="file"
                                id="theme-image"
@@ -47,7 +52,7 @@
                             <input type="text"
                                    id="theme-name"
                                    name="name"
-                                   value="{{ old('name') }}"
+                                   value="{{ old('name', $theme['name'] ?? '') }}"
                                    class="form-control @error('name') is-invalid @enderror"
                                    required>
                             @error('name')
@@ -60,7 +65,7 @@
                             <textarea id="theme-description"
                                       name="description"
                                       rows="3"
-                                      class="form-control @error('description') is-invalid @enderror">{{ old('description') }}</textarea>
+                                      class="form-control @error('description') is-invalid @enderror">{{ old('description', $theme['description'] ?? '') }}</textarea>
                             @error('description')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -71,7 +76,7 @@
                             <input type="text"
                                    id="theme-version"
                                    name="version"
-                                   value="{{ old('version', '1.0.0') }}"
+                                   value="{{ old('version', $theme['version'] ?? '1.0.0') }}"
                                    class="form-control @error('version') is-invalid @enderror">
                             @error('version')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -83,7 +88,7 @@
                             <input type="text"
                                    id="theme-author"
                                    name="author"
-                                   value="{{ old('author') }}"
+                                   value="{{ old('author', $theme['author'] ?? '') }}"
                                    class="form-control @error('author') is-invalid @enderror">
                             @error('author')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -91,12 +96,25 @@
                         </div>
 
                         <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">Create</button>
+                            <button type="submit" class="btn btn-primary">Save</button>
                             <a href="{{ route('admin.settings', ['tab' => 'theme']) }}" class="btn btn-outline-secondary">Cancel</a>
                         </div>
                     </div>
                 </div>
             </form>
+
+            @if (($theme['slug'] ?? '') !== $activeTheme)
+                <form method="POST"
+                      action="{{ route('admin.settings.theme.destroy', $theme['slug']) }}"
+                      class="theme-edit-delete"
+                      data-confirm="Delete this theme?"
+                      data-confirm-title="Delete theme"
+                      data-confirm-label="Delete">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-outline-danger">Delete</button>
+                </form>
+            @endif
         </div>
     </div>
 @endsection

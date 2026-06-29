@@ -132,6 +132,10 @@
     margin-top: auto;
 }
 
+.theme-card-actions {
+    margin-top: auto;
+}
+
 .theme-card-add {
     cursor: pointer;
 }
@@ -176,6 +180,19 @@
 
 .theme-create-form {
     max-width: 960px;
+}
+
+.theme-edit-body {
+    position: relative;
+    min-height: 12rem;
+    padding-bottom: 4rem;
+}
+
+.theme-edit-delete {
+    position: absolute;
+    right: 1.5rem;
+    bottom: 1.5rem;
+    margin: 0;
 }
 
 .theme-upload-zone {

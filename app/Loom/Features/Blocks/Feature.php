@@ -49,6 +49,9 @@ class Feature extends FeatureBase
 
     public function getBlockByName(string $name): ?Block
     {
-        return Block::where('name', $name)->first();
+        return Block::query()
+            ->forTheme(app(\Loom\Support\ThemeManager::class)->activeSlug())
+            ->where('name', $name)
+            ->first();
     }
 }

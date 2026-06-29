@@ -1,4 +1,5 @@
 import * as bootstrap from 'bootstrap';
+import { initAdminNotifications } from './admin-notifications';
 import { initDynamicCodeEditors } from './dynamic-code-editor';
 import { initPluginBuilder } from './plugin-builder';
 import { initPageBlockRepeater } from './page-block-repeater';
@@ -313,6 +314,7 @@ function initRepeaters() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    initAdminNotifications();
     initSidebar();
     initNavGroups();
     initCodeEditors();

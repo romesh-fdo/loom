@@ -36,7 +36,7 @@
                     </div>
                 @empty
                     <div class="col-12">
-                        <p class="text-muted mb-0">No blocks found.</p>
+                        <p class="text-muted mb-0">No blocks for this theme yet.</p>
                     </div>
                 @endforelse
             </div>

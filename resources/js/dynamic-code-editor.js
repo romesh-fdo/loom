@@ -1,4 +1,5 @@
 import * as bootstrap from 'bootstrap';
+import { confirmAction } from './admin-notifications';
 import { EditorView, Decoration } from '@codemirror/view';
 import { EditorState, StateField } from '@codemirror/state';
 import { basicSetup } from 'codemirror';
@@ -537,7 +538,7 @@ function createDynamicCodeEditor(root) {
         syncHiddenInput();
     }
 
-    function removeParameter(name) {
+    async function removeParameter(name) {
         const parameter = parameters.find((item) => item.name === name);
 
         if (! parameter) {
@@ -554,9 +555,12 @@ function createDynamicCodeEditor(root) {
             return;
         }
 
-        const confirmed = window.confirm(
-            `Remove "${parameter.label}" and replace ${ranges.length} placeholder(s) with the original default text?`
-        );
+        const confirmed = await confirmAction({
+            title: 'Remove parameter',
+            message: `Remove "${parameter.label}" and replace ${ranges.length} placeholder(s) with the original default text?`,
+            confirmLabel: 'Remove',
+            danger: true,
+        });
 
         if (! confirmed) {
             return;

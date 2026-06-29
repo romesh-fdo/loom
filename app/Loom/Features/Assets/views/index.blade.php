@@ -11,14 +11,7 @@
 @section('content')
     <div class="admin-panel assets-panel" data-bs-theme="dark">
         <div class="admin-panel-header">
-            <div>
-                <h2>Assets</h2>
-                <p class="text-muted small mb-0">
-                    Active theme: <strong>{{ $activeTheme['name'] ?? $activeThemeSlug }}</strong>.
-                    Files are stored in
-                    <code>/{{ trim(config('loom.assets.public_path', 'theme/default/assets'), '/') }}</code>.
-                </p>
-            </div>
+            <h2>Assets</h2>
             <a href="{{ $assetsUrl }}" class="btn btn-sm btn-outline-secondary" target="_blank" rel="noopener">
                 <i class="bi bi-box-arrow-up-right"></i> Open public folder
             </a>

@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use Illuminate\Validation\Rule;
 use Loom\Support\ThemeManager;
 
 class ThemeController extends Controller
@@ -16,34 +15,68 @@ class ThemeController extends Controller
         return view('loom-theme::create');
     }
 
+    public function edit(string $slug, ThemeManager $themes): View
+    {
+        if (! preg_match('/^[a-z0-9-]+$/', $slug)) {
+            abort(404);
+        }
+
+        $theme = $themes->find($slug);
+
+        if ($theme === null) {
+            abort(404);
+        }
+
+        return view('loom-theme::edit', [
+            'theme' => $theme,
+            'activeTheme' => $themes->activeSlug(),
+        ]);
+    }
+
     public function store(Request $request, ThemeManager $themes): RedirectResponse
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'slug' => [
-                'required',
-                'string',
-                'max:64',
-                'regex:/^[a-z0-9-]+$/',
-                Rule::notIn([ThemeManager::DEFAULT_SLUG]),
-                function (string $attribute, mixed $value, \Closure $fail) use ($themes) {
-                    if ($themes->slugExists((string) $value)) {
-                        $fail('A theme with this slug already exists.');
-                    }
-                },
-            ],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'version' => ['nullable', 'string', 'max:32'],
+            'author' => ['nullable', 'string', 'max:255'],
             'image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:2048'],
         ]);
 
-        $themes->create(
-            $validated['name'],
-            $validated['slug'],
-            $request->file('image')
-        );
+        $themes->create($validated, $request->file('image'));
 
         return redirect()
             ->route('admin.settings', ['tab' => 'theme'])
             ->with('success', "Theme \"{$validated['name']}\" created successfully.");
+    }
+
+    public function update(string $slug, Request $request, ThemeManager $themes): RedirectResponse
+    {
+        if (! preg_match('/^[a-z0-9-]+$/', $slug)) {
+            abort(404);
+        }
+
+        if ($themes->find($slug) === null) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'version' => ['nullable', 'string', 'max:32'],
+            'author' => ['nullable', 'string', 'max:255'],
+            'image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:2048'],
+        ]);
+
+        $themes->updateInfo($slug, $validated);
+
+        if ($request->hasFile('image')) {
+            $themes->updateImage($slug, $request->file('image'));
+        }
+
+        return redirect()
+            ->route('admin.settings', ['tab' => 'theme'])
+            ->with('success', "Theme \"{$validated['name']}\" updated.");
     }
 
     public function activate(string $slug, ThemeManager $themes): RedirectResponse
@@ -86,5 +119,30 @@ class ThemeController extends Controller
         return redirect()
             ->route('admin.settings', ['tab' => 'theme'])
             ->with('success', "Preview image updated for \"{$theme['name']}\".");
+    }
+
+    public function destroy(string $slug, ThemeManager $themes): RedirectResponse
+    {
+        if (! preg_match('/^[a-z0-9-]+$/', $slug)) {
+            abort(404);
+        }
+
+        $theme = $themes->find($slug);
+
+        if ($theme === null) {
+            abort(404);
+        }
+
+        try {
+            $themes->delete($slug);
+        } catch (\InvalidArgumentException $e) {
+            return redirect()
+                ->route('admin.settings', ['tab' => 'theme'])
+                ->with('error', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('admin.settings', ['tab' => 'theme'])
+            ->with('success', "Theme \"{$theme['name']}\" deleted.");
     }
 }

@@ -978,6 +978,15 @@ body {
     min-width: min(calc(100vw - 1.5rem), 22rem);
 }
 
+.admin-confirm-modal .modal-content {
+    box-shadow: var(--bs-modal-box-shadow);
+}
+
+.admin-confirm-modal .modal-body {
+    color: var(--bs-secondary-color);
+    font-size: 0.95rem;
+}
+
 /* Mobile offcanvas sidebar */
 @media (max-width: 991.98px) {
     .admin-sidebar {

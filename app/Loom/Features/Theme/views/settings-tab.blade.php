@@ -32,16 +32,23 @@
                     <div class="theme-card-content">
                         <h3 class="theme-card-title">{{ $theme['name'] ?? '—' }}</h3>
 
-                        @if (($theme['slug'] ?? '') !== $activeTheme)
-                            <form method="POST"
-                                  action="{{ route('admin.settings.theme.activate', $theme['slug']) }}"
-                                  class="theme-card-foot">
-                                @csrf
-                                <button type="submit" class="btn btn-sm btn-primary w-100">
-                                    Activate
-                                </button>
-                            </form>
-                        @endif
+                        <div class="theme-card-actions d-flex gap-2">
+                            <a href="{{ route('admin.settings.theme.edit', $theme['slug']) }}"
+                               class="btn btn-sm btn-outline-secondary flex-fill">
+                                Edit
+                            </a>
+
+                            @if (($theme['slug'] ?? '') !== $activeTheme)
+                                <form method="POST"
+                                      action="{{ route('admin.settings.theme.activate', $theme['slug']) }}"
+                                      class="flex-fill">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-primary w-100">
+                                        Activate
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
                     </div>
                 </article>
             </div>

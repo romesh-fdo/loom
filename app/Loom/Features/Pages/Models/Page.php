@@ -3,9 +3,12 @@
 namespace Loom\Features\Pages\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Loom\Support\Concerns\BelongsToTheme;
 
 class Page extends Model
 {
+    use BelongsToTheme;
+
     protected $table;
 
     public function __construct(array $attributes = [])
@@ -16,6 +19,7 @@ class Page extends Model
     }
 
     protected $fillable = [
+        'theme_slug',
         'name',
         'url',
         'sections',

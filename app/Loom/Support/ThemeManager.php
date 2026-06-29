@@ -5,7 +5,10 @@ namespace Loom\Support;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
+use Loom\Features\Blocks\Models\Block;
+use Loom\Features\Pages\Models\Page;
 
 class ThemeManager
 {
@@ -111,38 +114,25 @@ class ThemeManager
     }
 
     /**
+     * @param  array<string, mixed>  $fields
      * @return array<string, mixed>
      */
-    public function create(string $name, string $slug, ?UploadedFile $image = null): array
+    public function create(array $fields, ?UploadedFile $image = null): array
     {
-        $slug = strtolower(trim($slug));
-
-        if (! preg_match('/^[a-z0-9-]+$/', $slug)) {
-            throw new InvalidArgumentException('Theme slug may only contain lowercase letters, numbers, and hyphens.');
-        }
-
-        if ($this->readManifest($slug) !== null) {
-            throw new InvalidArgumentException("Theme [{$slug}] already exists.");
-        }
-
-        $defaultAssets = $this->themesPath().'/'.self::DEFAULT_SLUG.'/assets';
-
-        if (! is_dir($defaultAssets)) {
-            throw new InvalidArgumentException('Default theme assets folder not found. Run php artisan loom:theme-migrate first.');
-        }
+        $name = (string) $fields['name'];
+        $slug = $this->generateSlug($name);
 
         $themeDir = $this->themesPath().'/'.$slug;
         $assetsDir = $themeDir.'/assets';
 
         File::makeDirectory($assetsDir, 0755, true);
-        File::copyDirectory($defaultAssets, $assetsDir);
 
         $manifest = [
             'name' => $name,
             'slug' => $slug,
-            'description' => '',
-            'version' => '1.0.0',
-            'author' => 'Loom',
+            'description' => $fields['description'] ?? '',
+            'version' => $fields['version'] ?? '1.0.0',
+            'author' => $fields['author'] ?? '',
             'created_at' => now()->toIso8601String(),
         ];
 
@@ -167,6 +157,28 @@ class ThemeManager
         }
 
         $manifest['image'] = $this->storePreviewImage($slug, $image);
+        $this->writeManifest($slug, $manifest);
+
+        return $this->enrich($manifest);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function updateInfo(string $slug, array $fields): array
+    {
+        $manifest = $this->readManifest($slug);
+
+        if ($manifest === null) {
+            throw new InvalidArgumentException("Theme [{$slug}] not found.");
+        }
+
+        $manifest['name'] = $fields['name'];
+        $manifest['description'] = $fields['description'] ?? '';
+        $manifest['version'] = $fields['version'] ?? ($manifest['version'] ?? '1.0.0');
+        $manifest['author'] = $fields['author'] ?? '';
+        $manifest['slug'] = $slug;
+
         $this->writeManifest($slug, $manifest);
 
         return $this->enrich($manifest);
@@ -221,8 +233,47 @@ class ThemeManager
         ]);
     }
 
+    public function delete(string $slug): void
+    {
+        if ($slug === $this->activeSlug()) {
+            throw new InvalidArgumentException('Cannot delete the active theme.');
+        }
+
+        if ($this->readManifest($slug) === null) {
+            throw new InvalidArgumentException("Theme [{$slug}] not found.");
+        }
+
+        Page::query()->forTheme($slug)->delete();
+        Block::query()->forTheme($slug)->delete();
+
+        File::deleteDirectory($this->themesPath().'/'.$slug);
+    }
+
     public function slugExists(string $slug): bool
     {
         return $this->readManifest($slug) !== null;
+    }
+
+    public function generateSlug(string $name): string
+    {
+        $base = Str::slug(trim($name));
+
+        if ($base === '') {
+            $base = 'theme';
+        }
+
+        if ($base === self::DEFAULT_SLUG) {
+            $base = 'theme';
+        }
+
+        $slug = $base;
+        $suffix = 2;
+
+        while ($this->readManifest($slug) !== null) {
+            $slug = $base.'-'.$suffix;
+            $suffix++;
+        }
+
+        return $slug;
     }
 }

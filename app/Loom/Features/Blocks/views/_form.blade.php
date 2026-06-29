@@ -92,10 +92,12 @@
         </button>
         <a href="{{ route('loom.blocks.index') }}" class="loom-form-btn loom-form-btn--secondary">Cancel</a>
         @if (isset($block))
-            <button type="submit"
-                    form="delete-block-form"
-                    class="loom-form-btn loom-form-btn--danger ms-auto"
-                    onclick="return confirm('Delete this block?')">
+            <button type="button"
+                    data-confirm-form="delete-block-form"
+                    data-confirm="Delete this block?"
+                    data-confirm-title="Delete block"
+                    data-confirm-label="Delete"
+                    class="loom-form-btn loom-form-btn--danger ms-auto">
                 Delete
             </button>
         @endif

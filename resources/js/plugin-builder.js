@@ -1,4 +1,5 @@
 import * as bootstrap from 'bootstrap';
+import { showAdminToast } from './admin-notifications';
 
 function reindexPluginBuilderFields(container) {
     container.querySelectorAll('[data-plugin-builder-field]').forEach((row, index) => {
@@ -397,7 +398,7 @@ function initPluginBuilderSave(form) {
             window.location.href = response.url;
         } catch {
             resetSaveUi();
-            window.alert('Save failed. Please try again.');
+            showAdminToast('Save failed. Please try again.', 'error');
         }
     });
 }

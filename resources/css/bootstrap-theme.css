@@ -168,7 +168,6 @@ a {
 
 .btn {
     transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
-    --bs-btn-border-width: 0;
 }
 
 .btn:not(:disabled):not(.disabled):active {
@@ -189,32 +188,44 @@ a {
     --bs-btn-disabled-color: #525252;
     --bs-btn-disabled-bg: #404040;
     --bs-btn-disabled-border-color: #404040;
+    color: var(--bs-btn-color);
+    background-color: var(--bs-btn-bg);
+    border-color: var(--bs-btn-border-color);
 }
 
 .btn-outline-primary {
     --bs-btn-color: #fafafa;
-    --bs-btn-border-color: #404040;
+    --bs-btn-bg: color-mix(in srgb, #fafafa 8%, transparent);
+    --bs-btn-border-color: #525252;
     --bs-btn-hover-color: #0a0a0a;
     --bs-btn-hover-bg: #fafafa;
     --bs-btn-hover-border-color: #fafafa;
     --bs-btn-active-color: #0a0a0a;
     --bs-btn-active-bg: #d4d4d4;
     --bs-btn-active-border-color: #d4d4d4;
+    color: var(--bs-btn-color);
+    background-color: var(--bs-btn-bg);
+    border-color: var(--bs-btn-border-color);
 }
 
 .btn-outline-secondary {
     --bs-btn-color: #faa823;
-    --bs-btn-border-color: #404040;
+    --bs-btn-bg: color-mix(in srgb, #faa823 12%, transparent);
+    --bs-btn-border-color: color-mix(in srgb, #faa823 45%, #404040);
     --bs-btn-hover-color: #0a0a0a;
     --bs-btn-hover-bg: #faa823;
     --bs-btn-hover-border-color: #faa823;
     --bs-btn-active-color: #0a0a0a;
     --bs-btn-active-bg: #e09515;
     --bs-btn-active-border-color: #e09515;
+    color: var(--bs-btn-color);
+    background-color: var(--bs-btn-bg);
+    border-color: var(--bs-btn-border-color);
 }
 
 .btn-outline-danger {
     --bs-btn-color: #f87171;
+    --bs-btn-bg: color-mix(in srgb, #f87171 10%, transparent);
     --bs-btn-border-color: #7f1d1d;
     --bs-btn-hover-color: #fef2f2;
     --bs-btn-hover-bg: #991b1b;
@@ -222,6 +233,9 @@ a {
     --bs-btn-active-color: #fef2f2;
     --bs-btn-active-bg: #7f1d1d;
     --bs-btn-active-border-color: #7f1d1d;
+    color: var(--bs-btn-color);
+    background-color: var(--bs-btn-bg);
+    border-color: var(--bs-btn-border-color);
 }
 
 .input-group-text {
@@ -237,6 +251,9 @@ a {
     --bs-btn-hover-color: #0a0a0a;
     --bs-btn-hover-bg: #e09515;
     --bs-btn-hover-border-color: #e09515;
+    color: var(--bs-btn-color);
+    background-color: var(--bs-btn-bg);
+    border-color: var(--bs-btn-border-color);
 }
 
 .btn-link {

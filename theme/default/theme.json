@@ -4,5 +4,6 @@
     "description": "Default Loom theme",
     "version": "1.0.0",
     "author": "Loom",
-    "created_at": "2026-06-29T13:54:45+00:00"
+    "created_at": "2026-06-29T13:54:45+00:00",
+    "image": "preview.png"
 }

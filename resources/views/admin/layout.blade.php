@@ -74,7 +74,15 @@
         </main>
     </div>
 
-    @include('admin.partials.flash-toasts')
+    @include('admin.partials.confirm-modal')
+
+    <div class="toast-container position-fixed top-0 end-0 p-3 admin-flash-toasts"
+         id="admin-toast-container"
+         aria-live="polite"
+         aria-atomic="true">
+        @include('admin.partials.flash-toasts')
+    </div>
+
     @stack('scripts')
 </body>
 </html>

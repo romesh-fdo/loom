@@ -38,10 +38,12 @@
         </button>
         <a href="{{ route('loom.pages.index') }}" class="loom-form-btn loom-form-btn--secondary">Cancel</a>
         @if (isset($page))
-            <button type="submit"
-                    form="delete-page-form"
-                    class="loom-form-btn loom-form-btn--danger ms-auto"
-                    onclick="return confirm('Delete this page?')">
+            <button type="button"
+                    data-confirm-form="delete-page-form"
+                    data-confirm="Delete this page?"
+                    data-confirm-title="Delete page"
+                    data-confirm-label="Delete"
+                    class="loom-form-btn loom-form-btn--danger ms-auto">
                 Delete
             </button>
         @endif

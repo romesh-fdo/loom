@@ -21,4 +21,10 @@ return [
     ],
 
     'table_prefix' => env('LOOM_TABLE_PREFIX', 'loom_'),
+
+    'active_theme' => env('LOOM_ACTIVE_THEME', 'default'),
+
+    'assets' => [
+        'public_path' => 'theme/'.env('LOOM_ACTIVE_THEME', 'default').'/assets',
+    ],
 ];

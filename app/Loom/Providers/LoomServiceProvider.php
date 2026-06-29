@@ -7,6 +7,8 @@ use Illuminate\Support\ServiceProvider;
 use Loom\Builder\SecureFileWriter;
 use Loom\Console\CachePluginsCommand;
 use Loom\Console\ClearPluginsCommand;
+use Loom\Console\InstallGitHooksCommand;
+use Loom\Console\MigrateThemeStructure;
 use Loom\Features\FeatureManager;
 use Loom\System\PluginAutoloader;
 use Loom\System\PluginManager;
@@ -35,6 +37,8 @@ class LoomServiceProvider extends ServiceProvider
             $this->commands([
                 CachePluginsCommand::class,
                 ClearPluginsCommand::class,
+                MigrateThemeStructure::class,
+                InstallGitHooksCommand::class,
             ]);
         }
 

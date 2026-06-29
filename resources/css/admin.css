@@ -151,21 +151,13 @@ body {
 }
 
 .admin-sidebar-footer {
-    padding: 1rem 1.25rem;
+    padding: 0.75rem;
+    margin-top: auto;
+    border-top: 1px solid var(--admin-sidebar-border);
 }
 
-.admin-sidebar-footer a {
-    color: var(--admin-sidebar-text);
-    text-decoration: none;
-    font-size: 0.85rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: color 0.15s;
-}
-
-.admin-sidebar-footer a:hover {
-    color: var(--admin-sidebar-text-hover);
+.admin-sidebar-footer .admin-nav-link {
+    margin-bottom: 0;
 }
 
 .admin-sidebar-close {

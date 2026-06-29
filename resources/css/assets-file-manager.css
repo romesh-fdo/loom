@@ -1,0 +1,258 @@
+/* Dark theme overrides for alexusmai/laravel-file-manager (loads after library CSS). */
+
+.assets-panel .admin-panel-header {
+    border-bottom: 1px solid var(--admin-table-border);
+}
+
+.assets-panel {
+    --fm-bg: #141414;
+    --fm-surface: #1a1a1a;
+    --fm-surface-hover: #1f1f1f;
+    --fm-border: #2a2a2a;
+    --fm-text: #e5e5e5;
+    --fm-muted: #a3a3a3;
+    --fm-accent: rgba(13, 202, 240, 0.14);
+    --fm-accent-text: #7dd3fc;
+}
+
+.assets-file-manager-wrap {
+    min-height: 480px;
+    height: calc(100vh - var(--admin-navbar-height) - 8.5rem);
+}
+
+.assets-file-manager-wrap > #fm {
+    height: 100%;
+}
+
+.assets-panel .fm {
+    height: 100%;
+    padding: 0.75rem 1rem 1rem;
+    background-color: var(--fm-bg) !important;
+    color: var(--fm-text) !important;
+}
+
+.assets-panel .fm:-webkit-full-screen,
+.assets-panel .fm:-moz-full-screen,
+.assets-panel .fm:fullscreen {
+    background-color: var(--fm-bg) !important;
+}
+
+.assets-panel .fm .fm-body {
+    border-top-color: var(--fm-border);
+    border-bottom-color: var(--fm-border);
+}
+
+.assets-panel .fm-navbar .btn,
+.assets-panel .fm-navbar .btn-group .btn {
+    --bs-btn-bg: var(--fm-surface);
+    --bs-btn-border-color: var(--fm-border);
+    --bs-btn-color: var(--fm-text);
+    --bs-btn-hover-bg: var(--fm-surface-hover);
+    --bs-btn-hover-border-color: #3a3a3a;
+    --bs-btn-hover-color: #fafafa;
+    --bs-btn-active-bg: #262626;
+    --bs-btn-active-border-color: #3a3a3a;
+    --bs-btn-active-color: #fafafa;
+}
+
+.assets-panel .fm-tree {
+    border-right-color: var(--fm-border);
+    background: var(--fm-surface);
+}
+
+.assets-panel .fm-tree-branch li > p {
+    color: var(--fm-muted);
+}
+
+.assets-panel .fm-tree-branch li > p:hover,
+.assets-panel .fm-tree-branch li > p.selected {
+    background-color: var(--fm-surface-hover) !important;
+    color: #fafafa !important;
+}
+
+.assets-panel .fm-tree .fm-tree-disk {
+    background-color: var(--fm-accent) !important;
+    color: var(--fm-accent-text) !important;
+}
+
+.assets-panel .fm-disk-list .badge.bg-light {
+    background-color: var(--fm-surface-hover) !important;
+    color: var(--fm-text) !important;
+    border: 1px solid var(--fm-border);
+}
+
+.assets-panel .fm-breadcrumb .breadcrumb {
+    --bs-breadcrumb-divider-color: var(--fm-muted);
+    --bs-breadcrumb-item-active-color: var(--fm-text);
+    background: var(--fm-surface) !important;
+    color: var(--fm-muted);
+}
+
+.assets-panel .fm-breadcrumb .breadcrumb-item a,
+.assets-panel .fm-breadcrumb .breadcrumb-item {
+    color: var(--fm-muted);
+}
+
+.assets-panel .fm-breadcrumb .breadcrumb-item:hover,
+.assets-panel .fm-breadcrumb .breadcrumb-item:not(.active):hover {
+    color: var(--fm-text);
+}
+
+.assets-panel .fm-breadcrumb .breadcrumb.active-manager {
+    background-color: var(--fm-accent) !important;
+    color: var(--fm-accent-text);
+}
+
+.assets-panel .fm-content {
+    color: var(--fm-text);
+}
+
+.assets-panel .fm-table {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--fm-text);
+    --bs-table-hover-bg: var(--fm-surface-hover);
+    --bs-table-border-color: var(--fm-border);
+}
+
+.assets-panel .fm-table thead th {
+    background: var(--fm-surface) !important;
+    color: var(--fm-muted) !important;
+    border-bottom: 1px solid var(--fm-border);
+}
+
+.assets-panel .fm-table thead th:hover {
+    background-color: var(--fm-surface-hover) !important;
+}
+
+.assets-panel .fm-table td {
+    border-color: var(--fm-border);
+    color: var(--fm-text);
+}
+
+.assets-panel .fm-table tr:hover {
+    background-color: var(--fm-surface-hover) !important;
+}
+
+.assets-panel .fm-table .text-hidden {
+    color: #525252 !important;
+}
+
+.assets-panel .fm-grid .fm-grid-item {
+    color: var(--fm-text);
+}
+
+.assets-panel .fm-grid .fm-grid-item:not(.active):hover,
+.assets-panel .fm-grid .fm-grid-item.active {
+    background-color: var(--fm-surface-hover) !important;
+    box-shadow: none !important;
+}
+
+.assets-panel .fm-grid .fm-grid-item.active {
+    outline: 1px solid rgba(13, 202, 240, 0.35);
+}
+
+.assets-panel .fm-grid .fm-grid-item .fm-item-icon > i,
+.assets-panel .fm-grid .fm-grid-item .fm-item-icon > figure > i {
+    color: var(--fm-muted) !important;
+}
+
+.assets-panel .fm-info-block {
+    border-bottom-color: var(--fm-border);
+    color: var(--fm-muted);
+}
+
+.assets-panel .fm-context-menu {
+    background-color: #1f1f1f !important;
+    border: 1px solid var(--fm-border);
+    box-shadow: var(--admin-card-shadow);
+    color: var(--fm-text);
+}
+
+.assets-panel .fm-context-menu ul {
+    border-bottom-color: var(--fm-border) !important;
+}
+
+.assets-panel .fm-context-menu ul > li:not(.disabled):hover {
+    background-color: var(--fm-surface-hover) !important;
+}
+
+.assets-panel .fm-notification .fm-notification-item {
+    background: #1f1f1f !important;
+    border-color: var(--fm-border) !important;
+    color: var(--fm-text) !important;
+}
+
+.assets-panel .fm-modal .modal-content {
+    background-color: #1f1f1f;
+    border-color: var(--fm-border);
+    color: var(--fm-text);
+}
+
+.assets-panel .fm-modal .modal-header,
+.assets-panel .fm-modal .modal-footer {
+    border-color: var(--fm-border);
+}
+
+.assets-panel .fm-modal .modal-title,
+.assets-panel .fm-modal .form-label,
+.assets-panel .fm-modal .form-check-label {
+    color: var(--fm-text);
+}
+
+.assets-panel .fm-modal .btn-close {
+    filter: invert(1) grayscale(100%);
+}
+
+.assets-panel .fm-modal .form-control,
+.assets-panel .fm-modal .form-select,
+.assets-panel .fm-modal-upload .form-control {
+    background-color: var(--fm-bg);
+    border-color: var(--fm-border);
+    color: var(--fm-text);
+}
+
+.assets-panel .fm-modal .form-control:focus,
+.assets-panel .fm-modal .form-select:focus {
+    background-color: var(--fm-bg);
+    border-color: #3a3a3a;
+    color: var(--fm-text);
+    box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.08);
+}
+
+.assets-panel .fm-modal-properties .modal-body .row:hover {
+    background-color: var(--fm-surface-hover) !important;
+}
+
+.assets-panel .fm-modal-properties .modal-body .col-2 {
+    color: var(--fm-muted);
+}
+
+.assets-panel .fm-additions-file-list,
+.assets-panel .fm-modal-clipboard .modal-body {
+    color: var(--fm-text);
+}
+
+.assets-panel .list-group-item {
+    background-color: var(--fm-surface);
+    border-color: var(--fm-border);
+    color: var(--fm-text);
+}
+
+.assets-panel .progress {
+    background-color: #262626;
+}
+
+.assets-panel .dropdown-menu {
+    background-color: #1f1f1f;
+    border-color: var(--fm-border);
+}
+
+.assets-panel .dropdown-item {
+    color: var(--fm-text);
+}
+
+.assets-panel .dropdown-item:hover,
+.assets-panel .dropdown-item:focus {
+    background-color: var(--fm-surface-hover);
+    color: #fafafa;
+}

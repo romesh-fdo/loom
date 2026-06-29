@@ -1,5 +1,9 @@
 <?php
 
+$activeTheme = trim(env('LOOM_ACTIVE_THEME', 'default'), '/');
+$loomAssetsPath = 'theme/'.$activeTheme.'/assets';
+$loomAssetsPublicDir = 'theme';
+
 return [
 
     /*
@@ -47,6 +51,15 @@ return [
             'report' => false,
         ],
 
+        'assets' => [
+            'driver' => 'local',
+            'root' => base_path($loomAssetsPath),
+            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/'.$loomAssetsPath,
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
@@ -75,6 +88,7 @@ return [
 
     'links' => [
         public_path('storage') => storage_path('app/public'),
+        public_path($loomAssetsPublicDir) => base_path($loomAssetsPublicDir),
     ],
 
 ];

@@ -7,6 +7,7 @@
     <title>@yield('title', 'Admin') — {{ config('app.name', 'Loom') }}</title>
 
     @vite(['resources/css/admin.css', 'resources/js/admin.js'])
+    @stack('styles')
 </head>
 <body>
     <div class="admin-sidebar-overlay" id="sidebar-overlay"></div>
@@ -30,6 +31,13 @@
 
             @include('admin.partials.navigation')
         </nav>
+
+        <div class="admin-sidebar-footer">
+            <a href="{{ route('admin.settings') }}" class="admin-nav-link {{ request()->routeIs('admin.settings') ? 'active' : '' }}">
+                <i class="bi bi-gear-fill"></i>
+                Settings
+            </a>
+        </div>
     </aside>
 
     <div class="admin-main">
@@ -67,5 +75,6 @@
     </div>
 
     @include('admin.partials.flash-toasts')
+    @stack('scripts')
 </body>
 </html>

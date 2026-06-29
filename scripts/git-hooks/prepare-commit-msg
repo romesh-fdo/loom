@@ -1,0 +1,14 @@
+#!/bin/sh
+# Strips Cursor agent attribution from commit messages.
+# Installed to .git/hooks/prepare-commit-msg by: php artisan loom:install-git-hooks
+
+MSG_FILE="$1"
+
+if [ ! -f "$MSG_FILE" ]; then
+  exit 0
+fi
+
+grep -v -E 'cursoragent@cursor\.com|Co-authored-by:\s*Cursor|Made-with:\s*Cursor|Made with Cursor' "$MSG_FILE" > "$MSG_FILE.tmp"
+mv "$MSG_FILE.tmp" "$MSG_FILE"
+
+exit 0

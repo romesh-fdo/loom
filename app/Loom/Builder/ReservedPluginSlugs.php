@@ -10,6 +10,7 @@ class ReservedPluginSlugs
         'blocks',
         'pages',
         'page-blocks',
+        'assets',
     ];
 
     public static function isReserved(string $slug): bool

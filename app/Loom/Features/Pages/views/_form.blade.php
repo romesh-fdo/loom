@@ -10,7 +10,7 @@
       @if ($formClass) class="{{ $formClass }}" @endif
       method="{{ $formMethod === 'GET' ? 'GET' : 'POST' }}"
       @if ($formEnctype) enctype="{{ $formEnctype }}" @endif
-      action="{{ isset($page) ? route('loom.pages.update', $page) : route('loom.pages.store') }}"
+      action="{{ isset($page) ? route('loom.pages.update', $page->slug) : route('loom.pages.store') }}"
       @foreach ($formAttributes as $attrKey => $attrValue)
           @if (is_bool($attrValue))
               @if ($attrValue) {{ $attrKey }} @endif
@@ -53,7 +53,7 @@
 @if (isset($page))
     <form id="delete-page-form"
           method="POST"
-          action="{{ route('loom.pages.destroy', $page) }}"
+          action="{{ route('loom.pages.destroy', $page->slug) }}"
           class="d-none">
         @csrf
         @method('DELETE')

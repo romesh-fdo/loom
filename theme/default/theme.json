@@ -5,5 +5,13 @@
     "version": "1.0.0",
     "author": "Loom",
     "created_at": "2026-06-29T13:54:45+00:00",
-    "image": "preview.png"
+    "image": "preview.png",
+    "segment_slots": {
+        "header": { "label": "Header / Navbar" },
+        "topbar": { "label": "Top bar" },
+        "footer": { "label": "Footer" },
+        "search_overlay": { "label": "Search overlay" },
+        "scroll_to_top": { "label": "Scroll to top" },
+        "body_end": { "label": "Before </body>" }
+    }
 }

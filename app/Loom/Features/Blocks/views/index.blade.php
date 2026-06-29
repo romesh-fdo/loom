@@ -28,8 +28,8 @@
                     <div class="col-sm-6 col-lg-4">
                         <div class="stat-card h-100">
                             <p class="stat-card-label mb-1">{{ $block->name }}</p>
-                            <p class="text-muted small mb-3">Updated {{ $block->updated_at->diffForHumans() }}</p>
-                            <a href="{{ route('loom.blocks.edit', $block) }}" class="btn btn-sm btn-outline-secondary">
+                            <p class="text-muted small mb-3">Updated {{ $block->updatedAt()->diffForHumans() }}</p>
+                            <a href="{{ route('loom.blocks.edit', $block->slug) }}" class="btn btn-sm btn-outline-secondary">
                                 Edit
                             </a>
                         </div>

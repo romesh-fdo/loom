@@ -1,3 +1,6 @@
+import { buildScalarParameterField } from './dynamic-parameter-fields';
+import { initRichTextEditors } from './rich-text-editor';
+
 function escapeHtml(value) {
     return String(value)
         .replace(/&/g, '&amp;')
@@ -20,78 +23,244 @@ function parseCatalog(raw) {
     }
 }
 
-function findBlock(catalog, blockId) {
-    return catalog.find((block) => String(block.id) === String(blockId)) ?? null;
+function findBlock(catalog, blockSlug) {
+    return catalog.find((block) => String(block.slug) === String(blockSlug)) ?? null;
 }
 
-function buildParameterInput(name, parameter, value, disabled) {
-    const type = parameter.type ?? 'text';
-    const label = escapeHtml(parameter.label ?? parameter.name);
-    const fieldName = `${name}[values][${parameter.name}]`;
-    const required = parameter.required ? ' required' : '';
-    const disabledAttr = disabled ? ' disabled' : '';
-    const resolvedValue = value ?? parameter.default ?? '';
+function parameterTipHtml(parameter) {
+    const tip = String(parameter.tip ?? '').trim();
 
-    if (type === 'textarea') {
-        return `
-            <div class="col-12">
-                <label class="form-label">${label}</label>
-                <textarea class="form-control" name="${fieldName}" rows="3"${required}${disabledAttr}>${escapeHtml(resolvedValue)}</textarea>
-            </div>
-        `;
+    if (! tip) {
+        return '';
     }
 
-    if (type === 'checkbox') {
-        const checked = resolvedValue === true || resolvedValue === '1' || resolvedValue === 1 || resolvedValue === 'on';
+    return `<div class="form-text">${escapeHtml(tip)}</div>`;
+}
 
-        return `
-            <div class="col-md-6">
-                <div class="form-check mt-4">
-                    <input type="hidden" name="${fieldName}" value="0"${disabledAttr}>
-                    <input type="checkbox" class="form-check-input" name="${fieldName}" value="1"${checked ? ' checked' : ''}${disabledAttr}>
-                    <label class="form-check-label">${label}</label>
-                </div>
-            </div>
-        `;
+function readInputValue(input) {
+    if (input.type === 'checkbox') {
+        return input.checked ? input.value : '0';
     }
 
-    if (type === 'select') {
-        const options = Array.isArray(parameter.options) ? parameter.options : [];
-        const optionsHtml = options.map((option) => {
-            const optionValue = typeof option === 'object' ? (option.value ?? option.label) : option;
-            const optionLabel = typeof option === 'object' ? (option.label ?? option.value) : option;
-            const selected = String(resolvedValue) === String(optionValue) ? ' selected' : '';
+    return input.value;
+}
 
-            return `<option value="${escapeHtml(optionValue)}"${selected}>${escapeHtml(optionLabel)}</option>`;
-        }).join('');
+function collectParameterValues(parametersEl, baseName) {
+    const values = {};
+    const valuesPrefix = `${baseName}[values]`;
 
-        return `
-            <div class="col-md-6">
-                <label class="form-label">${label}</label>
-                <select class="form-select" name="${fieldName}"${required}${disabledAttr}>
-                    <option value="" disabled ${resolvedValue === '' ? 'selected' : ''}>Select…</option>
-                    ${optionsHtml}
-                </select>
-            </div>
-        `;
-    }
+    parametersEl.querySelectorAll('[name]').forEach((input) => {
+        const name = input.getAttribute('name');
 
-    const inputType = ['number', 'email', 'color'].includes(type) ? type : 'text';
+        if (! name || ! name.startsWith(valuesPrefix)) {
+            return;
+        }
+
+        const rest = name.slice(valuesPrefix.length);
+        const scalarMatch = rest.match(/^\[([^\]]+)\]$/);
+
+        if (scalarMatch) {
+            values[scalarMatch[1]] = readInputValue(input);
+
+            return;
+        }
+
+        const repeaterMatch = rest.match(/^\[([^\]]+)\]\[(\d+)\]\[([^\]]+)\]$/);
+
+        if (repeaterMatch) {
+            const [, repeaterName, rowIndex, fieldName] = repeaterMatch;
+
+            if (! values[repeaterName]) {
+                values[repeaterName] = [];
+            }
+
+            if (! values[repeaterName][rowIndex]) {
+                values[repeaterName][rowIndex] = {};
+            }
+
+            values[repeaterName][rowIndex][fieldName] = readInputValue(input);
+        }
+    });
+
+    Object.keys(values).forEach((key) => {
+        if (Array.isArray(values[key])) {
+            values[key] = values[key].filter((row) => row && typeof row === 'object');
+        }
+    });
+
+    return values;
+}
+
+function buildSubFieldInput(baseName, repeaterName, rowIndex, field, value, disabled) {
+    return buildScalarParameterField({
+        fieldName: `${baseName}[values][${repeaterName}][${rowIndex}][${field.name}]`,
+        label: field.label ?? field.name,
+        type: field.type ?? 'text',
+        value,
+        defaultValue: field.default ?? '',
+        tip: field.tip,
+        required: field.required,
+        disabled,
+        options: field.options ?? [],
+        colClass: 'col-md-6',
+        controlClass: 'form-control form-control-sm',
+    });
+}
+
+function buildRepeaterRowHtml(baseName, parameter, rowIndex, rowValues, disabled) {
+    const fields = Array.isArray(parameter.fields) ? parameter.fields : [];
+    const itemLabel = parameter.item ? `${parameter.item}` : 'Item';
+    const fieldsHtml = fields.map((field) => {
+        return buildSubFieldInput(
+            baseName,
+            parameter.name,
+            rowIndex,
+            field,
+            rowValues?.[field.name] ?? '',
+            disabled
+        );
+    }).join('');
 
     return `
-        <div class="col-md-6">
-            <label class="form-label">${label}</label>
-            <input type="${inputType}" class="form-control" name="${fieldName}" value="${escapeHtml(resolvedValue)}"${required}${disabledAttr}>
+        <div class="loom-value-repeater__item" data-value-repeater-item data-index="${rowIndex}">
+            <div class="loom-value-repeater__item-header">
+                <span class="loom-value-repeater__item-label">${escapeHtml(itemLabel)} ${rowIndex + 1}</span>
+                <button type="button" class="btn btn-sm btn-outline-danger" data-value-repeater-remove${disabled ? ' disabled' : ''}>Remove</button>
+            </div>
+            <div class="row g-2">${fieldsHtml}</div>
         </div>
     `;
 }
 
-function renderParameters(container, catalog, blockId, baseName, initialValues, disabled) {
-    const block = findBlock(catalog, blockId);
+function bindValueRepeater(container, baseName, parameter, initialRows, disabled) {
+    const repeater = container.querySelector('[data-value-repeater]');
+
+    if (! repeater || repeater.dataset.bound === 'true') {
+        return;
+    }
+
+    repeater.dataset.bound = 'true';
+
+    const itemsEl = repeater.querySelector('[data-value-repeater-items]');
+    const addBtn = repeater.querySelector('[data-value-repeater-add]');
+    const rows = Array.isArray(initialRows) ? initialRows : [];
+
+    function renderRows(rowData) {
+        itemsEl.innerHTML = rowData.map((row, index) => {
+            return buildRepeaterRowHtml(baseName, parameter, index, row, disabled);
+        }).join('');
+
+        itemsEl.hidden = rowData.length === 0;
+    }
+
+    function getCurrentRows() {
+        const rowMap = {};
+        const prefix = `${baseName}[values][${parameter.name}]`;
+
+        itemsEl.querySelectorAll('[name]').forEach((input) => {
+            const name = input.getAttribute('name');
+
+            if (! name || ! name.startsWith(prefix)) {
+                return;
+            }
+
+            const match = name.slice(prefix.length).match(/^\[(\d+)\]\[([^\]]+)\]$/);
+
+            if (! match) {
+                return;
+            }
+
+            const rowIndex = match[1];
+            const fieldName = match[2];
+
+            if (! rowMap[rowIndex]) {
+                rowMap[rowIndex] = {};
+            }
+
+            rowMap[rowIndex][fieldName] = readInputValue(input);
+        });
+
+        return Object.keys(rowMap)
+            .sort((a, b) => Number(a) - Number(b))
+            .map((key) => rowMap[key]);
+    }
+
+    renderRows(rows);
+
+    addBtn?.addEventListener('click', () => {
+        if (disabled) {
+            return;
+        }
+
+        const currentRows = getCurrentRows();
+        currentRows.push({});
+        renderRows(currentRows);
+    });
+
+    repeater.addEventListener('click', (event) => {
+        const removeBtn = event.target.closest('[data-value-repeater-remove]');
+
+        if (! removeBtn || disabled) {
+            return;
+        }
+
+        const item = removeBtn.closest('[data-value-repeater-item]');
+
+        if (! item) {
+            return;
+        }
+
+        item.remove();
+
+        const currentRows = getCurrentRows();
+        renderRows(currentRows);
+    });
+}
+
+function buildRepeaterInput(baseName, parameter, value, disabled) {
+    const label = escapeHtml(parameter.label ?? parameter.name);
+    const tipHtml = parameterTipHtml(parameter);
+    const rows = Array.isArray(value) ? value : [];
+    const repeaterId = `repeater-${baseName.replace(/[^a-zA-Z0-9_-]/g, '-')}-${parameter.name}`;
+
+    return `
+        <div class="col-12" data-value-repeater-wrap="${escapeHtml(parameter.name)}">
+            <label class="form-label">${label}</label>
+            ${tipHtml}
+            <div class="loom-value-repeater" id="${repeaterId}" data-value-repeater data-parameter-name="${escapeHtml(parameter.name)}">
+                <div class="loom-value-repeater__items" data-value-repeater-items${rows.length === 0 ? ' hidden' : ''}></div>
+                <button type="button" class="btn btn-sm btn-outline-primary mt-2" data-value-repeater-add${disabled ? ' disabled' : ''}>Add ${escapeHtml(parameter.item || 'item')}</button>
+            </div>
+        </div>
+    `;
+}
+
+function buildParameterInput(name, parameter, value, disabled) {
+    const type = parameter.type ?? 'text';
+
+    if (type === 'repeater') {
+        return buildRepeaterInput(name, parameter, value, disabled);
+    }
+
+    return buildScalarParameterField({
+        fieldName: `${name}[values][${parameter.name}]`,
+        label: parameter.label ?? parameter.name,
+        type,
+        value,
+        defaultValue: parameter.default ?? '',
+        tip: parameter.tip,
+        required: parameter.required,
+        disabled,
+        options: parameter.options ?? [],
+    });
+}
+
+function renderParameters(container, catalog, blockSlug, baseName, initialValues, disabled) {
+    const block = findBlock(catalog, blockSlug);
     container.innerHTML = '';
 
     if (!block || !Array.isArray(block.parameters) || block.parameters.length === 0) {
-        container.innerHTML = blockId
+        container.innerHTML = blockSlug
             ? '<div class="col-12"><p class="text-muted small mb-0">This block has no dynamic parameters.</p></div>'
             : '';
 
@@ -105,7 +274,23 @@ function renderParameters(container, catalog, blockId, baseName, initialValues, 
             'beforeend',
             buildParameterInput(baseName, parameter, values[parameter.name] ?? '', disabled)
         );
+
+        if (parameter.type === 'repeater') {
+            const wrap = container.querySelector(`[data-value-repeater-wrap="${parameter.name}"]`);
+
+            if (wrap) {
+                bindValueRepeater(
+                    wrap,
+                    baseName,
+                    parameter,
+                    Array.isArray(values[parameter.name]) ? values[parameter.name] : [],
+                    disabled
+                );
+            }
+        }
     });
+
+    initRichTextEditors(container);
 }
 
 function getRowBaseName(repeater, rowIndex) {
@@ -135,25 +320,11 @@ function reindexBlockRepeater(repeater) {
         const baseName = getRowBaseName(repeater, index);
 
         if (select) {
-            select.name = `${baseName}[block_id]`;
+            select.name = `${baseName}[block_slug]`;
         }
 
         if (select && parametersEl) {
-            const currentValues = {};
-
-            parametersEl.querySelectorAll('[name*="[values]"]').forEach((input) => {
-                const match = input.name.match(/\[values\]\[([^\]]+)\]/);
-
-                if (!match) {
-                    return;
-                }
-
-                if (input.type === 'checkbox') {
-                    currentValues[match[1]] = input.checked ? input.value : '0';
-                } else {
-                    currentValues[match[1]] = input.value;
-                }
-            });
+            const currentValues = collectParameterValues(parametersEl, baseName);
 
             renderParameters(parametersEl, catalog, select.value, baseName, currentValues, isDisabled);
         }

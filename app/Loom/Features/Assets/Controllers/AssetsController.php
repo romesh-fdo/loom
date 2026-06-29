@@ -9,13 +9,8 @@ class AssetsController extends Controller
 {
     public function index(): View
     {
-        return view('loom-assets::index', [
-            'assetsUrl' => url($this->assetsPublicPath()),
-        ]);
-    }
+        session(['loom.file_manager.disk' => 'assets']);
 
-    protected function assetsPublicPath(): string
-    {
-        return trim((string) config('loom.assets.public_path', 'theme/assets'), '/');
+        return view('loom-assets::index');
     }
 }

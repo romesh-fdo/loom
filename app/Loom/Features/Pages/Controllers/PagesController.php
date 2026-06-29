@@ -3,30 +3,33 @@
 namespace Loom\Features\Pages\Controllers;
 
 use Closure;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
-use Loom\Features\Blocks\Models\Block;
-use Loom\Features\Pages\Models\Page;
-use Loom\Http\Controllers\Concerns\ScopesToActiveTheme;
-use Loom\Http\Controllers\FormResourceController;
+use Loom\Http\Controllers\ThemeFileResourceController;
 use Loom\Support\FormSchema;
+use Loom\Support\ThemeContent\BlockStore;
+use Loom\Support\ThemeContent\PageStore;
+use Loom\Support\ThemeContent\ThemeFileRecord;
+use Loom\Support\ThemeContent\ThemeFileStore;
 
-class PagesController extends FormResourceController
+class PagesController extends ThemeFileResourceController
 {
-    use ScopesToActiveTheme;
+    public function __construct(
+        protected PageStore $pages,
+        protected BlockStore $blocks,
+    ) {}
 
     public function index(Request $request): View
     {
         $search = $request->string('q')->trim();
         $perPage = (int) ($this->module()->getConfig('per_page', 12) ?? 12);
 
-        $pages = $this->themedQuery()
-            ->when($search->isNotEmpty(), fn ($query) => $query->where('name', 'like', "%{$search}%"))
-            ->latest()
-            ->paginate($perPage)
-            ->withQueryString();
+        $pages = $this->pages->paginate(
+            $search->isNotEmpty() ? $search->toString() : null,
+            $perPage,
+            max(1, (int) $request->input('page', 1)),
+            $this->activeThemeSlug()
+        );
 
         return view('loom-pages::index', [
             'pages' => $pages,
@@ -34,7 +37,7 @@ class PagesController extends FormResourceController
         ]);
     }
 
-    protected function formViewData(?Model $record = null): array
+    protected function formViewData(?ThemeFileRecord $record = null): array
     {
         $data = parent::formViewData($record);
         $catalog = $this->blocksCatalog();
@@ -53,12 +56,20 @@ class PagesController extends FormResourceController
         $formDefinitions = $this->sortedFormDefinitions();
         $rules = FormSchema::validationRulesForDefinitions($this->pluginId(), $formDefinitions);
 
-        $pageId = $request->route('page');
-        $pageId = $pageId instanceof Page ? $pageId->getKey() : $pageId;
+        $currentSlug = $request->route('pageSlug');
+        $currentSlug = $currentSlug instanceof ThemeFileRecord ? $currentSlug->slug : $currentSlug;
 
-        $rules['url'][] = Rule::unique(Page::query()->getModel()->getTable(), 'url')
-            ->where('theme_slug', $this->activeThemeSlug())
-            ->ignore($pageId);
+        $rules['url'][] = function (string $attribute, mixed $value, Closure $fail) use ($currentSlug): void {
+            if (! is_string($value) || $value === '') {
+                return;
+            }
+
+            $url = strtolower(trim($value, '/'));
+
+            if ($this->pages->urlExists($url, is_string($currentSlug) ? $currentSlug : null, $this->activeThemeSlug())) {
+                $fail('The URL has already been taken for this theme.');
+            }
+        };
         $rules['sections'] = ['nullable', 'array', $this->sectionsStructureRule()];
 
         $validated = $request->validate($rules);
@@ -69,10 +80,7 @@ class PagesController extends FormResourceController
 
         $validated['sections'] = $this->normalizeSections($validated['sections'] ?? []);
 
-        return $this->withThemeSlug(
-            FormSchema::mapValidatedToModel($validated, $formDefinitions, $this->pluginId()),
-            $request
-        );
+        return FormSchema::mapValidatedToModel($validated, $formDefinitions, $this->pluginId());
     }
 
     /**
@@ -80,12 +88,10 @@ class PagesController extends FormResourceController
      */
     protected function blocksCatalog(): array
     {
-        return Block::query()
-            ->forTheme($this->activeThemeSlug())
-            ->orderBy('name')
-            ->get()
-            ->map(fn (Block $block) => [
-                'id' => $block->id,
+        return $this->blocks->all($this->activeThemeSlug())
+            ->sortBy('name')
+            ->map(fn (ThemeFileRecord $block) => [
+                'slug' => $block->slug,
                 'name' => $block->name,
                 'parameters' => $block->code['parameters'] ?? [],
             ])
@@ -102,10 +108,8 @@ class PagesController extends FormResourceController
                 return;
             }
 
-            $blocksById = Block::query()
-                ->forTheme($this->activeThemeSlug())
-                ->get()
-                ->keyBy('id');
+            $blocksBySlug = $this->blocks->all($this->activeThemeSlug())
+                ->keyBy(fn (ThemeFileRecord $block) => $block->slug);
 
             foreach ($value as $index => $section) {
                 if (! is_array($section)) {
@@ -114,15 +118,15 @@ class PagesController extends FormResourceController
                     return;
                 }
 
-                $blockId = $section['block_id'] ?? null;
+                $blockSlug = $section['block_slug'] ?? null;
 
-                if ($blockId === null || $blockId === '') {
+                if ($blockSlug === null || $blockSlug === '') {
                     $fail('Section at index '.$index.' must include a block.');
 
                     return;
                 }
 
-                $block = $blocksById->get((int) $blockId);
+                $block = $blocksBySlug->get((string) $blockSlug);
 
                 if ($block === null) {
                     $fail('Section at index '.$index.' references an unknown block.');
@@ -163,6 +167,74 @@ class PagesController extends FormResourceController
 
                     $paramValue = $values[$name] ?? null;
 
+                    if ($type === 'repeater') {
+                        if ($paramValue === null || $paramValue === '') {
+                            continue;
+                        }
+
+                        if (! is_array($paramValue)) {
+                            $fail('Parameter "'.$name.'" in section '.$index.' must be a list of items.');
+
+                            return;
+                        }
+
+                        $fields = is_array($parameter['fields'] ?? null) ? $parameter['fields'] : [];
+                        $allowedFieldNames = collect($fields)->pluck('name')->filter()->all();
+
+                        foreach ($paramValue as $rowIndex => $row) {
+                            if (! is_array($row)) {
+                                $fail('Parameter "'.$name.'" row '.$rowIndex.' in section '.$index.' must be an object.');
+
+                                return;
+                            }
+
+                            foreach ($row as $fieldKey => $fieldValue) {
+                                if (! in_array($fieldKey, $allowedFieldNames, true)) {
+                                    $fail('Parameter "'.$name.'" row '.$rowIndex.' in section '.$index.' has an unknown field "'.$fieldKey.'".');
+
+                                    return;
+                                }
+                            }
+
+                            foreach ($fields as $field) {
+                                if (! is_array($field)) {
+                                    continue;
+                                }
+
+                                $fieldName = $field['name'] ?? null;
+                                $fieldType = $field['type'] ?? 'text';
+
+                                if (! is_string($fieldName) || $fieldName === '') {
+                                    continue;
+                                }
+
+                                $fieldValue = $row[$fieldName] ?? null;
+
+                                if ($fieldType === 'checkbox') {
+                                    continue;
+                                }
+
+                                if ($fieldValue === null || $fieldValue === '') {
+                                    continue;
+                                }
+
+                                if ($fieldType === 'number' && ! is_numeric($fieldValue)) {
+                                    $fail('Parameter "'.$name.'.'.$fieldName.'" in section '.$index.' row '.$rowIndex.' must be a number.');
+
+                                    return;
+                                }
+
+                                if ($fieldType === 'email' && ! filter_var((string) $fieldValue, FILTER_VALIDATE_EMAIL)) {
+                                    $fail('Parameter "'.$name.'.'.$fieldName.'" in section '.$index.' row '.$rowIndex.' must be a valid email.');
+
+                                    return;
+                                }
+                            }
+                        }
+
+                        continue;
+                    }
+
                     if ($type === 'checkbox') {
                         continue;
                     }
@@ -189,17 +261,17 @@ class PagesController extends FormResourceController
 
     /**
      * @param  array<int, mixed>  $sections
-     * @return list<array{block_id: int, values: array<string, mixed>}>
+     * @return list<array{block_slug: string, values: array<string, mixed>}>
      */
     protected function normalizeSections(array $sections): array
     {
         return collect($sections)
-            ->filter(fn ($section) => is_array($section) && ! empty($section['block_id']))
+            ->filter(fn ($section) => is_array($section) && ! empty($section['block_slug']))
             ->map(function (array $section) {
                 $values = $section['values'] ?? [];
 
                 return [
-                    'block_id' => (int) $section['block_id'],
+                    'block_slug' => (string) $section['block_slug'],
                     'values' => is_array($values) ? $values : [],
                 ];
             })
@@ -212,9 +284,9 @@ class PagesController extends FormResourceController
         return 'loom.pages';
     }
 
-    protected function modelClass(): string
+    protected function fileStore(): ThemeFileStore
     {
-        return Page::class;
+        return $this->pages;
     }
 
     protected function viewNamespace(): string
@@ -222,9 +294,9 @@ class PagesController extends FormResourceController
         return 'loom-pages';
     }
 
-    protected function routeModelKey(): string
+    protected function routeRecordKey(): string
     {
-        return 'page';
+        return 'pageSlug';
     }
 
     protected function indexRoute(): string

@@ -7,14 +7,27 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
-use Loom\Features\Blocks\Models\Block;
-use Loom\Features\Pages\Models\Page;
 
 class ThemeManager
 {
     public const DEFAULT_SLUG = 'default';
 
     public const PREVIEW_BASENAME = 'preview';
+
+    /**
+     * @return array<string, array{label: string}>
+     */
+    public static function defaultSegmentSlots(): array
+    {
+        return [
+            'header' => ['label' => 'Header / Navbar'],
+            'topbar' => ['label' => 'Top bar'],
+            'footer' => ['label' => 'Footer'],
+            'search_overlay' => ['label' => 'Search overlay'],
+            'scroll_to_top' => ['label' => 'Scroll to top'],
+            'body_end' => ['label' => 'Before </body>'],
+        ];
+    }
 
     public function themesPath(): string
     {
@@ -123,9 +136,9 @@ class ThemeManager
         $slug = $this->generateSlug($name);
 
         $themeDir = $this->themesPath().'/'.$slug;
-        $assetsDir = $themeDir.'/assets';
 
-        File::makeDirectory($assetsDir, 0755, true);
+        File::makeDirectory($themeDir.'/assets', 0755, true);
+        $this->ensureContentDirectories($slug);
 
         $manifest = [
             'name' => $name,
@@ -134,6 +147,7 @@ class ThemeManager
             'version' => $fields['version'] ?? '1.0.0',
             'author' => $fields['author'] ?? '',
             'created_at' => now()->toIso8601String(),
+            'segment_slots' => self::defaultSegmentSlots(),
         ];
 
         if ($image !== null) {
@@ -141,8 +155,57 @@ class ThemeManager
         }
 
         $this->writeManifest($slug, $manifest);
+        $this->copyContentFromTheme(self::DEFAULT_SLUG, $slug);
 
         return $this->enrich($manifest);
+    }
+
+    public function ensureContentDirectories(string $slug): void
+    {
+        $themeDir = $this->themesPath().'/'.$slug;
+
+        foreach (['blocks', 'pages', 'segments'] as $subdir) {
+            $path = $themeDir.'/'.$subdir;
+
+            if (! is_dir($path)) {
+                File::makeDirectory($path, 0755, true);
+            }
+        }
+    }
+
+    public function copyContentFromTheme(string $sourceSlug, string $targetSlug): void
+    {
+        if ($sourceSlug === $targetSlug) {
+            return;
+        }
+
+        $sourceDir = $this->themesPath().'/'.$sourceSlug;
+        $targetDir = $this->themesPath().'/'.$targetSlug;
+
+        if (! is_dir($sourceDir)) {
+            return;
+        }
+
+        $this->ensureContentDirectories($targetSlug);
+
+        foreach (['blocks', 'pages', 'segments'] as $subdir) {
+            $from = $sourceDir.'/'.$subdir;
+            $to = $targetDir.'/'.$subdir;
+
+            if (! is_dir($from)) {
+                continue;
+            }
+
+            $patterns = $subdir === 'pages'
+                ? ['*.json']
+                : ['*.blade.php', '*.json'];
+
+            foreach ($patterns as $pattern) {
+                foreach (glob($from.'/'.$pattern) ?: [] as $file) {
+                    File::copy($file, $to.'/'.basename($file));
+                }
+            }
+        }
     }
 
     /**
@@ -178,6 +241,10 @@ class ThemeManager
         $manifest['version'] = $fields['version'] ?? ($manifest['version'] ?? '1.0.0');
         $manifest['author'] = $fields['author'] ?? '';
         $manifest['slug'] = $slug;
+
+        if (! isset($manifest['segment_slots'])) {
+            $manifest['segment_slots'] = self::defaultSegmentSlots();
+        }
 
         $this->writeManifest($slug, $manifest);
 
@@ -242,9 +309,6 @@ class ThemeManager
         if ($this->readManifest($slug) === null) {
             throw new InvalidArgumentException("Theme [{$slug}] not found.");
         }
-
-        Page::query()->forTheme($slug)->delete();
-        Block::query()->forTheme($slug)->delete();
 
         File::deleteDirectory($this->themesPath().'/'.$slug);
     }

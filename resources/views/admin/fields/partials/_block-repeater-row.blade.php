@@ -1,6 +1,6 @@
 @php
     $rowValues = $rowValues ?? [];
-    $blockId = old("{$name}.{$rowIndex}.block_id", $rowValues['block_id'] ?? '');
+    $blockSlug = old("{$name}.{$rowIndex}.block_slug", $rowValues['block_slug'] ?? $rowValues['block_id'] ?? '');
     $values = old("{$name}.{$rowIndex}.values", $rowValues['values'] ?? []);
     $values = is_array($values) ? $values : [];
     $isPrototype = $isPrototype ?? false;
@@ -29,13 +29,13 @@
             <div class="col-md-6">
                 <label class="form-label">Block</label>
                 <select class="form-select"
-                        name="{{ $name }}[{{ $displayIndex }}][block_id]"
+                        name="{{ $name }}[{{ $displayIndex }}][block_slug]"
                         data-block-repeater-select
                         @if ($required) required @endif
                         @if ($disabled) disabled @endif>
-                    <option value="" disabled {{ $blockId === '' || $blockId === null ? 'selected' : '' }}>Select a block…</option>
+                    <option value="" disabled {{ $blockSlug === '' || $blockSlug === null ? 'selected' : '' }}>Select a block…</option>
                     @foreach ($blocksCatalog as $block)
-                        <option value="{{ $block['id'] }}" @selected((string) $blockId === (string) $block['id'])>
+                        <option value="{{ $block['slug'] }}" @selected((string) $blockSlug === (string) $block['slug'])>
                             {{ $block['name'] }}
                         </option>
                     @endforeach

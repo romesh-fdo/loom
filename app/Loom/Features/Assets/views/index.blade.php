@@ -10,14 +10,10 @@
 
 @section('content')
     <div class="admin-panel assets-panel" data-bs-theme="dark">
-        <div class="admin-panel-header">
-            <h2>Assets</h2>
-            <a href="{{ $assetsUrl }}" class="btn btn-sm btn-outline-secondary" target="_blank" rel="noopener">
-                <i class="bi bi-box-arrow-up-right"></i> Open public folder
-            </a>
-        </div>
         <div class="admin-panel-body p-0">
-            <div id="fm-main-block" class="assets-file-manager-wrap">
+            <div id="fm-main-block"
+                 class="assets-file-manager-wrap"
+                 data-file-manager-src="{{ asset('vendor/file-manager/js/file-manager.js') }}">
                 <div id="fm"></div>
             </div>
         </div>
@@ -25,18 +21,5 @@
 @endsection
 
 @push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const block = document.getElementById('fm-main-block');
-
-            if (block) {
-                const top = block.getBoundingClientRect().top;
-                block.style.height = Math.max(480, window.innerHeight - top - 16) + 'px';
-            }
-
-            const script = document.createElement('script');
-            script.src = @json(asset('vendor/file-manager/js/file-manager.js'));
-            document.body.appendChild(script);
-        });
-    </script>
+    @vite(['resources/js/file-manager-page.js'])
 @endpush

@@ -25,6 +25,8 @@ class FeatureManager
             \Loom\Features\PluginBuilder\Feature::class => 'loom.plugin-builder',
             \Loom\Features\Blocks\Feature::class => 'loom.blocks',
             \Loom\Features\Pages\Feature::class => 'loom.pages',
+            \Loom\Features\Segments\Feature::class => 'loom.segments',
+            \Loom\Features\Media\Feature::class => 'loom.media',
             \Loom\Features\Assets\Feature::class => 'loom.assets',
             \Loom\Features\Theme\Feature::class => 'loom.theme',
         ];

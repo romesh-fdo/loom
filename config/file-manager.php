@@ -1,7 +1,7 @@
 <?php
 
-use Alexusmai\LaravelFileManager\Services\ConfigService\DefaultConfigRepository;
 use Alexusmai\LaravelFileManager\Services\ACLService\ConfigACLRepository;
+use Loom\Support\FileManager\SessionDiskConfigRepository;
 
 return [
 
@@ -10,7 +10,7 @@ return [
      *
      * Default - DefaultConfigRepository get config from this file
      */
-    'configRepository'  => DefaultConfigRepository::class,
+    'configRepository'  => SessionDiskConfigRepository::class,
 
     /**
      * ACL rules repository
@@ -31,7 +31,7 @@ return [
      * List of disk names that you want to use
      * (from config/filesystems)
      */
-    'diskList'          => ['assets'],
+    'diskList'          => ['assets', 'media'],
 
     /**
      * Default disk for left manager

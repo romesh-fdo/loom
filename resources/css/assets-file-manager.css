@@ -1,10 +1,7 @@
 /* Dark theme overrides for alexusmai/laravel-file-manager (loads after library CSS). */
 
-.assets-panel .admin-panel-header {
-    border-bottom: 1px solid var(--admin-table-border);
-}
-
-.assets-panel {
+.assets-panel,
+.media-panel {
     --fm-bg: #141414;
     --fm-surface: #1a1a1a;
     --fm-surface-hover: #1f1f1f;
@@ -15,20 +12,72 @@
     --fm-accent-text: #7dd3fc;
 }
 
-.assets-file-manager-wrap {
-    min-height: 480px;
-    height: calc(100vh - var(--admin-navbar-height) - 8.5rem);
+/* Fill admin content area on file-manager pages. */
+.admin-main:has(.assets-panel),
+.admin-main:has(.media-panel) {
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
 }
 
-.assets-file-manager-wrap > #fm {
+.admin-content:has(.assets-panel),
+.admin-content:has(.media-panel) {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.assets-panel,
+.media-panel {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.assets-panel .admin-panel-header,
+.media-panel .admin-panel-header {
+    display: none;
+}
+
+.assets-panel .admin-panel-body,
+.media-panel .admin-panel-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.assets-file-manager-wrap,
+.media-file-manager-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
     height: 100%;
 }
 
-.assets-panel .fm {
+.assets-file-manager-wrap > #fm,
+.media-file-manager-wrap > #fm {
     height: 100%;
+    min-height: 0;
+}
+
+.assets-panel .fm,
+.media-panel .fm {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
     padding: 0.75rem 1rem 1rem;
     background-color: var(--fm-bg) !important;
     color: var(--fm-text) !important;
+}
+
+.assets-panel .fm .fm-body,
+.media-panel .fm .fm-body {
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 .assets-panel .fm:-webkit-full-screen,

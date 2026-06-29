@@ -1,6 +1,7 @@
 @import 'bootstrap/dist/css/bootstrap.min.css';
 @import 'bootstrap-icons/font/bootstrap-icons.css';
 @import './bootstrap-theme.css';
+@import './theme-settings.css';
 
 :root {
     --bs-body-font-family: "Segoe UI Variable Text", "Segoe UI", segoeui, "Helvetica Neue", helvetica, arial, sans-serif;
@@ -768,6 +769,13 @@ body {
     color: var(--loom-form-help);
 }
 
+.dynamic-code-parameters__item-tip {
+    margin-top: 0.35rem;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--loom-form-help);
+}
+
 .dynamic-code-parameters__item-actions {
     display: flex;
     flex-direction: column;
@@ -811,6 +819,57 @@ body {
     color: var(--loom-form-field-focus);
 }
 
+.cm-blade-foreach-marker {
+    background: color-mix(in srgb, #6366f1 12%, transparent);
+}
+
+.dynamic-code-parameters__nested {
+    margin: -0.25rem 0 0.5rem 0.75rem;
+    padding-left: 0.65rem;
+    border-left: 2px solid color-mix(in srgb, var(--loom-form-field-focus) 25%, transparent);
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.dynamic-code-parameters__item--nested {
+    padding: 0.5rem 0.6rem;
+}
+
+.loom-value-repeater {
+    border: 1px solid var(--loom-form-field-border);
+    border-radius: 0.375rem;
+    padding: 0.65rem;
+    background: color-mix(in srgb, var(--loom-form-field-bg) 50%, transparent);
+}
+
+.loom-value-repeater__items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.loom-value-repeater__item {
+    padding: 0.65rem;
+    border: 1px solid var(--loom-form-field-border);
+    border-radius: 0.375rem;
+    background: var(--loom-form-field-bg);
+}
+
+.loom-value-repeater__item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.loom-value-repeater__item-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--loom-form-label);
+}
+
 .admin-terminal-output {
     background: #1c1c1c;
     border-radius: 0.5rem;
@@ -831,6 +890,47 @@ body {
     .dynamic-code-parameters__list {
         max-height: 220px;
     }
+}
+
+.loom-rich-text-editor {
+    border: 1px solid var(--loom-form-field-border);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: var(--loom-form-field-bg);
+}
+
+.loom-rich-text-editor .ql-toolbar {
+    border: 0;
+    border-bottom: 1px solid var(--loom-form-field-border);
+    background: color-mix(in srgb, var(--loom-form-field-bg) 85%, #000);
+}
+
+.loom-rich-text-editor .ql-container {
+    border: 0;
+    font-family: inherit;
+    font-size: 0.9375rem;
+}
+
+.loom-rich-text-editor .ql-editor {
+    min-height: 180px;
+    color: var(--loom-form-label);
+}
+
+.loom-rich-text-editor .ql-editor.ql-blank::before {
+    color: var(--loom-form-help);
+    font-style: normal;
+}
+
+.loom-rich-text-editor .ql-stroke {
+    stroke: var(--loom-form-label);
+}
+
+.loom-rich-text-editor .ql-fill {
+    fill: var(--loom-form-label);
+}
+
+.loom-rich-text-editor .ql-picker-label {
+    color: var(--loom-form-label);
 }
 
 .loom-form-actions {

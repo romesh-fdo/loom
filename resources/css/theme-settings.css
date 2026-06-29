@@ -246,3 +246,29 @@
     color: var(--admin-icon-color);
     font-size: 1.35rem;
 }
+
+.segment-card-media {
+    min-height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #242424 0%, #1a1a1a 100%);
+}
+
+.segment-card-icon {
+    font-size: 1.75rem;
+    color: var(--admin-muted);
+}
+
+.segment-card-disabled {
+    opacity: 0.65;
+}
+
+.segment-card .theme-card-title {
+    font-size: 0.95rem;
+}
+
+.segment-card .theme-card-slug {
+    font-size: 0.75rem;
+    margin-bottom: 0.75rem;
+}

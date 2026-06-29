@@ -12,6 +12,7 @@ export default defineConfig({
                 'resources/css/theme-settings.css',
                 'resources/css/assets-file-manager.css',
                 'resources/js/admin.js',
+                'resources/js/file-manager-page.js',
             ],
             refresh: true,
         }),

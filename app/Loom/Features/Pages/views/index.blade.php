@@ -29,7 +29,7 @@
                         <div class="stat-card h-100">
                             <p class="stat-card-label mb-1">{{ $page->name }}</p>
                             <p class="text-muted small mb-3">/{{ $page->url }}</p>
-                            <a href="{{ route('loom.pages.edit', $page) }}" class="btn btn-sm btn-outline-secondary">
+                            <a href="{{ route('loom.pages.edit', $page->slug) }}" class="btn btn-sm btn-outline-secondary">
                                 Edit
                             </a>
                         </div>

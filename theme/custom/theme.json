@@ -1,0 +1,16 @@
+{
+    "name": "Custom",
+    "slug": "custom",
+    "description": "sds",
+    "version": "1.0.0",
+    "author": "Romesh",
+    "created_at": "2026-06-29T14:30:06+00:00",
+    "segment_slots": {
+        "header": { "label": "Header / Navbar" },
+        "topbar": { "label": "Top bar" },
+        "footer": { "label": "Footer" },
+        "search_overlay": { "label": "Search overlay" },
+        "scroll_to_top": { "label": "Scroll to top" },
+        "body_end": { "label": "Before </body>" }
+    }
+}

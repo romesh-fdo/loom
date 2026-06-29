@@ -1,4 +1,6 @@
 @php
+    use Loom\Support\DynamicParameterTypes;
+
     $name = $name ?? '';
     $label = $label ?? null;
     $rawValue = $value ?? old($name, $value ?? '');
@@ -12,6 +14,7 @@
     $readonly = $readonly ?? false;
     $attributes = $attributes ?? [];
     $language = $attributes['data-language'] ?? 'html';
+    $placeholderPrefix = $attributes['data-placeholder-prefix'] ?? 'blockData';
     $errorKey = $errorKey ?? preg_replace('/\[(.*?)\]/', '.$1', $name);
 
     $parsed = is_array($rawValue) ? $rawValue : null;
@@ -32,17 +35,10 @@
     $jsonValue = json_encode($parsed, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
     $modalId = $id . '-dynamic-modal';
+    $loopModalId = $id . '-loop-modal';
     $menuId = $id . '-dynamic-menu';
 
-    $parameterTypes = [
-        'text' => 'Text',
-        'textarea' => 'Textarea',
-        'number' => 'Number',
-        'email' => 'Email',
-        'select' => 'Select',
-        'checkbox' => 'Checkbox',
-        'color' => 'Color',
-    ];
+    $parameterTypes = DynamicParameterTypes::labels();
 @endphp
 
 @component('admin.fields.partials._wrapper', compact(
@@ -62,8 +58,11 @@
          data-dynamic-code-editor
          data-input-id="{{ $id }}"
          data-modal-id="{{ $modalId }}"
+         data-loop-modal-id="{{ $loopModalId }}"
          data-menu-id="{{ $menuId }}"
          data-language="{{ $language }}"
+         data-placeholder-prefix="{{ $placeholderPrefix }}"
+         data-parameter-types='@json($parameterTypes)'
          @if ($disabled) data-disabled="true" @endif
          @if ($readonly) data-readonly="true" @endif>
         <div class="dynamic-code-field__editor">
@@ -73,7 +72,7 @@
         <aside class="dynamic-code-parameters" data-dynamic-code-parameters>
             <div class="dynamic-code-parameters__header">
                 <h6 class="dynamic-code-parameters__title">Dynamic parameters</h6>
-                <p class="dynamic-code-parameters__hint">Highlight text in the editor, right-click, and choose Make dynamic.</p>
+                <p class="dynamic-code-parameters__hint">Highlight text, then press <kbd>Ctrl</kbd>+<kbd>A</kbd> or right-click to add a dynamic field or loop.</p>
             </div>
             <div class="dynamic-code-parameters__list" data-dynamic-code-parameters-list>
                 <p class="dynamic-code-parameters__empty text-muted mb-0" data-dynamic-code-parameters-empty>
@@ -92,6 +91,12 @@
                 data-dynamic-code-make-dynamic
                 role="menuitem">
             Make dynamic
+        </button>
+        <button type="button"
+                class="dynamic-code-context-menu__item"
+                data-dynamic-code-make-loop
+                role="menuitem">
+            Make loop
         </button>
     </div>
 
@@ -124,7 +129,7 @@
                                autocomplete="off"
                                placeholder="e.g. Header text">
                     </div>
-                    <div class="mb-0">
+                    <div class="mb-3">
                         <label class="form-label" for="{{ $id }}-param-name">Field name</label>
                         <input type="text"
                                class="form-control font-monospace"
@@ -135,11 +140,81 @@
                                pattern="[a-z][a-z0-9_]*">
                         <div class="form-text">Lowercase letters, numbers, and underscores only.</div>
                     </div>
+                    <div class="mb-0">
+                        <label class="form-label" for="{{ $id }}-param-tip">Tip <span class="text-muted fw-normal">(optional)</span></label>
+                        <textarea class="form-control"
+                                  id="{{ $id }}-param-tip"
+                                  data-dynamic-code-param-tip
+                                  rows="2"
+                                  placeholder="Instructions for whoever fills in this field"></textarea>
+                        <div class="form-text">Shown as helper text when editing page or segment values.</div>
+                    </div>
                     <div class="alert alert-danger mt-3 mb-0 d-none" data-dynamic-code-modal-error role="alert"></div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary" data-dynamic-code-modal-submit>Add parameter</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade dynamic-code-modal"
+         id="{{ $loopModalId }}"
+         tabindex="-1"
+         aria-hidden="true"
+         data-dynamic-code-loop-modal>
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" data-dynamic-code-loop-modal-title>Make loop</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ $id }}-loop-label">Label</label>
+                        <input type="text"
+                               class="form-control"
+                               id="{{ $id }}-loop-label"
+                               data-dynamic-code-loop-label
+                               autocomplete="off"
+                               placeholder="e.g. Hero stats">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ $id }}-loop-name">Loop name</label>
+                        <input type="text"
+                               class="form-control font-monospace"
+                               id="{{ $id }}-loop-name"
+                               data-dynamic-code-loop-name
+                               autocomplete="off"
+                               placeholder="e.g. stats"
+                               pattern="[a-z][a-z0-9_]*">
+                        <div class="form-text">Collection key used when filling page values.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ $id }}-loop-item">Item variable</label>
+                        <input type="text"
+                               class="form-control font-monospace"
+                               id="{{ $id }}-loop-item"
+                               data-dynamic-code-loop-item
+                               autocomplete="off"
+                               placeholder="e.g. stat"
+                               pattern="[a-z][a-z0-9_]*">
+                        <div class="form-text">Used in placeholders like <code>@{{ $stat['number'] }}</code>.</div>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label" for="{{ $id }}-loop-tip">Tip <span class="text-muted fw-normal">(optional)</span></label>
+                        <textarea class="form-control"
+                                  id="{{ $id }}-loop-tip"
+                                  data-dynamic-code-loop-tip
+                                  rows="2"
+                                  placeholder="Instructions for this repeating section"></textarea>
+                    </div>
+                    <div class="alert alert-danger mt-3 mb-0 d-none" data-dynamic-code-loop-modal-error role="alert"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" data-dynamic-code-loop-modal-submit>Add loop</button>
                 </div>
             </div>
         </div>

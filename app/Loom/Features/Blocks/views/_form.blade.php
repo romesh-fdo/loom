@@ -21,7 +21,7 @@
       @if ($formClass) class="{{ $formClass }}" @endif
       method="{{ $formMethod === 'GET' ? 'GET' : 'POST' }}"
       @if ($formEnctype) enctype="{{ $formEnctype }}" @endif
-      action="{{ isset($block) ? route('loom.blocks.update', $block) : route('loom.blocks.store') }}"
+      action="{{ isset($block) ? route('loom.blocks.update', $block->slug) : route('loom.blocks.store') }}"
       @foreach ($formAttributes as $attrKey => $attrValue)
           @if (is_bool($attrValue))
               @if ($attrValue) {{ $attrKey }} @endif
@@ -107,7 +107,7 @@
 @if (isset($block))
     <form id="delete-block-form"
           method="POST"
-          action="{{ route('loom.blocks.destroy', $block) }}"
+          action="{{ route('loom.blocks.destroy', $block->slug) }}"
           class="d-none">
         @csrf
         @method('DELETE')

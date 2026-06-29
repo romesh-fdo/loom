@@ -27,4 +27,8 @@ return [
     'assets' => [
         'public_path' => 'theme/'.env('LOOM_ACTIVE_THEME', 'default').'/assets',
     ],
+
+    'media' => [
+        'public_path' => 'media',
+    ],
 ];

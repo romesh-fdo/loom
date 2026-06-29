@@ -2,8 +2,10 @@
 
 namespace Loom\Features\Blocks;
 
-use Loom\Features\Blocks\Models\Block;
 use Loom\Features\FeatureBase;
+use Loom\Support\ThemeContent\BlockStore;
+use Loom\Support\ThemeContent\ThemeFileRecord;
+use Loom\Support\ThemeManager;
 
 class Feature extends FeatureBase
 {
@@ -47,11 +49,11 @@ class Feature extends FeatureBase
         ];
     }
 
-    public function getBlockByName(string $name): ?Block
+    public function getBlockByName(string $name): ?ThemeFileRecord
     {
-        return Block::query()
-            ->forTheme(app(\Loom\Support\ThemeManager::class)->activeSlug())
-            ->where('name', $name)
-            ->first();
+        $themeSlug = app(ThemeManager::class)->activeSlug();
+
+        return app(BlockStore::class)->all($themeSlug)
+            ->first(fn (ThemeFileRecord $block) => ($block->name ?? '') === $name);
     }
 }

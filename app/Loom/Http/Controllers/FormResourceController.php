@@ -4,15 +4,18 @@ namespace Loom\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Loom\Features\Contracts\FormModule;
+use Loom\Http\Controllers\Concerns\RespondsToAjaxFormSave;
 use Loom\Support\FormSchema;
 use Loom\Support\ModuleResolver;
 
 abstract class FormResourceController extends Controller
 {
+    use RespondsToAjaxFormSave;
     abstract protected function pluginId(): string;
 
     /**
@@ -33,15 +36,13 @@ abstract class FormResourceController extends Controller
         return view($this->createView(), $this->formViewData());
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         $record = $this->modelClass()::create($this->validateRecord($request));
 
         $this->afterStore($record);
 
-        return redirect()
-            ->route($this->indexRoute())
-            ->with('success', $this->flashMessage('created'));
+        return $this->savedResponse($request, 'created', $record);
     }
 
     public function edit(Request $request): View
@@ -54,16 +55,14 @@ abstract class FormResourceController extends Controller
         ));
     }
 
-    public function update(Request $request): RedirectResponse
+    public function update(Request $request): JsonResponse|RedirectResponse
     {
         $record = $this->resolveRouteModel($request);
         $record->update($this->validateRecord($request));
 
         $this->afterUpdate($record);
 
-        return redirect()
-            ->route($this->indexRoute())
-            ->with('success', $this->flashMessage('updated'));
+        return $this->savedResponse($request, 'updated', $record);
     }
 
     public function destroy(Request $request): RedirectResponse

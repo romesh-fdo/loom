@@ -6,5 +6,7 @@ use Loom\Features\Blocks\Controllers\BlocksController;
 Route::prefix(config('loom.admin.route_prefix'))
     ->name(config('loom.admin.route_name_prefix'))
     ->group(function () {
-        Route::resource('blocks', BlocksController::class)->except(['show']);
+        Route::resource('blocks', BlocksController::class)
+            ->except(['show'])
+            ->parameters(['blocks' => 'blockSlug']);
     });

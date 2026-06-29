@@ -1,0 +1,98 @@
+{
+    "form": {
+        "id": "loom-segment-form",
+        "class": "loom-segment-form",
+        "method": "POST",
+        "enctype": "multipart/form-data",
+        "attributes": {
+            "data-loom-form": "segments-basic",
+            "novalidate": false
+        }
+    },
+    "layout": [
+        {
+            "section": "segment",
+            "rowClass": "row g-3 mb-3",
+            "fields": [
+                { "name": "name", "colClass": "col-md-6" },
+                { "name": "slot", "colClass": "col-md-6" }
+            ]
+        },
+        {
+            "section": "segment",
+            "rowClass": "row g-3 mb-3",
+            "fields": [
+                { "name": "enabled", "colClass": "col-12" }
+            ]
+        },
+        {
+            "section": "segment",
+            "rowClass": "row g-3 mb-3",
+            "fields": [
+                { "name": "code", "colClass": "col-12" }
+            ]
+        }
+    ],
+    "fields": {
+        "name": {
+            "section": "segment",
+            "type": "text",
+            "label": "Segment name",
+            "id": "field-name",
+            "class": "form-control",
+            "wrapperClass": "mb-0",
+            "colClass": "col-md-6",
+            "labelClass": "form-label",
+            "placeholder": "e.g. Scroll to top",
+            "help": "A human-readable name for this segment",
+            "required": true,
+            "validation": ["required", "string", "max:255"]
+        },
+        "slot": {
+            "section": "segment",
+            "type": "select",
+            "label": "Layout slot",
+            "id": "field-slot",
+            "class": "form-select",
+            "wrapperClass": "mb-0",
+            "colClass": "col-md-6",
+            "labelClass": "form-label",
+            "help": "Where this segment renders in the theme layout",
+            "required": true,
+            "options": [],
+            "validation": ["required", "string", "max:64"]
+        },
+        "enabled": {
+            "section": "segment",
+            "type": "checkbox",
+            "label": "Enabled",
+            "id": "field-enabled",
+            "class": "form-check-input",
+            "wrapperClass": "mb-0",
+            "colClass": "col-12",
+            "labelClass": "form-check-label",
+            "value": "1",
+            "validation": ["nullable", "boolean"],
+            "value": "1",
+            "checked": true
+        },
+        "code": {
+            "section": "segment",
+            "type": "dynamic_code",
+            "label": "Code",
+            "id": "field-code",
+            "class": "d-none",
+            "wrapperClass": "mb-0",
+            "colClass": "col-12",
+            "labelClass": "form-label",
+            "help": "HTML template for this segment. Highlight text, right-click, and choose Make dynamic to add editable parameters.",
+            "required": true,
+            "attributes": {
+                "data-language": "html",
+                "data-placeholder-prefix": "segmentData",
+                "spellcheck": "false"
+            },
+            "validation": ["required", "json"]
+        }
+    }
+}

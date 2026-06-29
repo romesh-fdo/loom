@@ -5,8 +5,10 @@ namespace Loom\Providers;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Loom\Builder\SecureFileWriter;
+use Loom\Console\ConvertThemeBladesCommand;
 use Loom\Console\CachePluginsCommand;
 use Loom\Console\ClearPluginsCommand;
+use Loom\Console\ExportThemeContentCommand;
 use Loom\Console\InstallGitHooksCommand;
 use Loom\Console\MigrateThemeStructure;
 use Loom\Features\FeatureManager;
@@ -37,6 +39,8 @@ class LoomServiceProvider extends ServiceProvider
             $this->commands([
                 CachePluginsCommand::class,
                 ClearPluginsCommand::class,
+                ExportThemeContentCommand::class,
+                ConvertThemeBladesCommand::class,
                 MigrateThemeStructure::class,
                 InstallGitHooksCommand::class,
             ]);

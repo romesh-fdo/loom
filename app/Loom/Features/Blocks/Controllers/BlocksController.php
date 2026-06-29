@@ -2,38 +2,33 @@
 
 namespace Loom\Features\Blocks\Controllers;
 
-use Closure;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use Loom\Features\Blocks\Models\Block;
-use Loom\Http\Controllers\Concerns\ScopesToActiveTheme;
-use Loom\Http\Controllers\FormResourceController;
+use Loom\Http\Controllers\Concerns\ValidatesDynamicCode;
+use Loom\Http\Controllers\ThemeFileResourceController;
+use Loom\Support\ThemeContent\BlockStore;
+use Loom\Support\ThemeContent\ThemeFileStore;
 use Loom\Support\FormSchema;
 
-class BlocksController extends FormResourceController
+class BlocksController extends ThemeFileResourceController
 {
-    use ScopesToActiveTheme;
+    use ValidatesDynamicCode;
 
-    private const ALLOWED_PARAMETER_TYPES = [
-        'text',
-        'textarea',
-        'number',
-        'email',
-        'select',
-        'checkbox',
-        'color',
-    ];
+    public function __construct(
+        protected BlockStore $blocks,
+    ) {}
 
     public function index(Request $request): View
     {
         $search = $request->string('q')->trim();
         $perPage = (int) ($this->module()->getConfig('per_page', 12) ?? 12);
 
-        $blocks = $this->themedQuery()
-            ->when($search->isNotEmpty(), fn ($query) => $query->where('name', 'like', "%{$search}%"))
-            ->latest()
-            ->paginate($perPage)
-            ->withQueryString();
+        $blocks = $this->blocks->paginate(
+            $search->isNotEmpty() ? $search->toString() : null,
+            $perPage,
+            max(1, (int) $request->input('page', 1)),
+            $this->activeThemeSlug()
+        );
 
         return view('loom-blocks::index', [
             'blocks' => $blocks,
@@ -49,7 +44,7 @@ class BlocksController extends FormResourceController
         $rules['code'] = [
             'required',
             'json',
-            $this->blockCodeStructureRule(),
+            $this->dynamicCodeStructureRule(),
         ];
 
         $validated = $request->validate($rules);
@@ -58,79 +53,7 @@ class BlocksController extends FormResourceController
             $validated['code'] = json_decode($validated['code'], true);
         }
 
-        return $this->withThemeSlug(
-            FormSchema::mapValidatedToModel($validated, $formDefinitions, $this->pluginId()),
-            $request
-        );
-    }
-
-    protected function blockCodeStructureRule(): Closure
-    {
-        return function (string $attribute, mixed $value, Closure $fail): void {
-            $decoded = json_decode((string) $value, true);
-
-            if (! is_array($decoded)) {
-                $fail('The code field must be a valid JSON object.');
-
-                return;
-            }
-
-            if (! isset($decoded['template']) || ! is_string($decoded['template'])) {
-                $fail('The code template is required.');
-
-                return;
-            }
-
-            if (trim($decoded['template']) === '') {
-                $fail('The code template cannot be empty.');
-
-                return;
-            }
-
-            if (! isset($decoded['parameters']) || ! is_array($decoded['parameters'])) {
-                $fail('The code parameters must be an array.');
-
-                return;
-            }
-
-            $names = [];
-
-            foreach ($decoded['parameters'] as $index => $parameter) {
-                if (! is_array($parameter)) {
-                    $fail('Parameter at index '.$index.' must be an object.');
-
-                    return;
-                }
-
-                foreach (['name', 'label', 'type'] as $key) {
-                    if (! isset($parameter[$key]) || ! is_string($parameter[$key]) || $parameter[$key] === '') {
-                        $fail('Parameter at index '.$index.' is missing a valid '.$key.'.');
-
-                        return;
-                    }
-                }
-
-                if (! preg_match('/^[a-z][a-z0-9_]*$/', $parameter['name'])) {
-                    $fail('Parameter name "'.$parameter['name'].'" is invalid.');
-
-                    return;
-                }
-
-                if (in_array($parameter['name'], $names, true)) {
-                    $fail('Parameter name "'.$parameter['name'].'" is duplicated.');
-
-                    return;
-                }
-
-                $names[] = $parameter['name'];
-
-                if (! in_array($parameter['type'], self::ALLOWED_PARAMETER_TYPES, true)) {
-                    $fail('Parameter type "'.$parameter['type'].'" is not allowed.');
-
-                    return;
-                }
-            }
-        };
+        return FormSchema::mapValidatedToModel($validated, $formDefinitions, $this->pluginId());
     }
 
     protected function pluginId(): string
@@ -138,9 +61,9 @@ class BlocksController extends FormResourceController
         return 'loom.blocks';
     }
 
-    protected function modelClass(): string
+    protected function fileStore(): ThemeFileStore
     {
-        return Block::class;
+        return $this->blocks;
     }
 
     protected function viewNamespace(): string
@@ -148,9 +71,9 @@ class BlocksController extends FormResourceController
         return 'loom-blocks';
     }
 
-    protected function routeModelKey(): string
+    protected function routeRecordKey(): string
     {
-        return 'block';
+        return 'blockSlug';
     }
 
     protected function indexRoute(): string

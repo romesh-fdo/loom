@@ -1,8 +1,10 @@
 import * as bootstrap from 'bootstrap';
 import { initAdminNotifications } from './admin-notifications';
+import { initAdminSaveShortcut } from './admin-save';
 import { initDynamicCodeEditors } from './dynamic-code-editor';
 import { initPluginBuilder } from './plugin-builder';
 import { initPageBlockRepeater } from './page-block-repeater';
+import { initRichTextEditors } from './rich-text-editor';
 import { EditorView, basicSetup } from 'codemirror';
 import { html } from '@codemirror/lang-html';
 import { javascript } from '@codemirror/lang-javascript';
@@ -315,6 +317,7 @@ function initRepeaters() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initAdminNotifications();
+    initAdminSaveShortcut();
     initSidebar();
     initNavGroups();
     initCodeEditors();
@@ -323,6 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initFilePreviews();
     initRepeaters();
     initPageBlockRepeater();
+    initRichTextEditors();
 
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
         new bootstrap.Tooltip(el);

@@ -1,6 +1,7 @@
 import * as bootstrap from 'bootstrap';
 import { initDynamicCodeEditors } from './dynamic-code-editor';
 import { initPluginBuilder } from './plugin-builder';
+import { initPageBlockRepeater } from './page-block-repeater';
 import { EditorView, basicSetup } from 'codemirror';
 import { html } from '@codemirror/lang-html';
 import { javascript } from '@codemirror/lang-javascript';
@@ -319,6 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initPluginBuilder();
     initFilePreviews();
     initRepeaters();
+    initPageBlockRepeater();
 
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
         new bootstrap.Tooltip(el);

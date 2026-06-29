@@ -1,0 +1,71 @@
+{
+    "form": {
+        "id": "loom-page-form",
+        "class": "loom-page-form",
+        "method": "POST",
+        "enctype": "multipart/form-data",
+        "attributes": {
+            "data-loom-form": "pages-basic",
+            "novalidate": false
+        }
+    },
+    "layout": [
+        {
+            "section": "page",
+            "rowClass": "row g-3 mb-3",
+            "fields": [
+                { "name": "name", "colClass": "col-md-6" },
+                { "name": "url", "colClass": "col-md-6" }
+            ]
+        },
+        {
+            "section": "page",
+            "rowClass": "row g-3 mb-3",
+            "fields": [
+                { "name": "sections", "colClass": "col-12" }
+            ]
+        }
+    ],
+    "fields": {
+        "name": {
+            "section": "page",
+            "type": "text",
+            "label": "Page name",
+            "id": "field-name",
+            "class": "form-control",
+            "wrapperClass": "mb-0",
+            "colClass": "col-md-6",
+            "labelClass": "form-label",
+            "placeholder": "e.g. About us",
+            "required": true,
+            "validation": ["required", "string", "max:255"]
+        },
+        "url": {
+            "section": "page",
+            "type": "text",
+            "label": "URL",
+            "id": "field-url",
+            "class": "form-control",
+            "wrapperClass": "mb-0",
+            "colClass": "col-md-6",
+            "labelClass": "form-label",
+            "placeholder": "about-us",
+            "help": "URL slug (lowercase letters, numbers, and hyphens)",
+            "required": true,
+            "validation": ["required", "string", "max:255", "regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/"]
+        },
+        "sections": {
+            "section": "page",
+            "type": "block_repeater",
+            "label": "Page blocks",
+            "id": "field-sections",
+            "wrapperClass": "mb-0",
+            "colClass": "col-12",
+            "labelClass": "form-label",
+            "help": "Add blocks to this page and fill in their dynamic parameters.",
+            "addLabel": "Add block",
+            "itemLabel": "Block",
+            "validation": ["nullable", "array"]
+        }
+    }
+}

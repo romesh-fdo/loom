@@ -2,7 +2,8 @@
 
 namespace Loom\Support;
 
-use Loom\System\PluginManager;
+use Loom\Features\Contracts\FormModule;
+use Loom\Support\ModuleResolver;
 
 class FormSchema
 {
@@ -13,13 +14,13 @@ class FormSchema
         array $persistedFields = [],
         ?array $values = null
     ): array {
-        $plugin = app(PluginManager::class)->getPlugin($pluginId);
+        $module = ModuleResolver::resolve($pluginId);
 
-        if ($plugin === null) {
+        if ($module === null) {
             return self::emptySchema();
         }
 
-        $raw = self::readRaw($plugin, $schema);
+        $raw = self::readRaw($module, $schema);
 
         if ($raw === null) {
             return self::emptySchema();
@@ -43,7 +44,7 @@ class FormSchema
             if (in_array($name, $persistedFields, true)) {
                 $fieldType = $fields[$name]['type'] ?? $fields[$name]['input'] ?? 'text';
 
-                if ($fieldType === 'repeater') {
+                if (in_array($fieldType, ['repeater', 'block_repeater'], true)) {
                     $default = $values[$name]
                         ?? (is_object($model) ? ($model->{$name} ?? null) : null)
                         ?? ($fields[$name]['value'] ?? []);
@@ -86,13 +87,13 @@ class FormSchema
 
     public static function meta(string $pluginId, string $schema): array
     {
-        $plugin = app(PluginManager::class)->getPlugin($pluginId);
+        $module = ModuleResolver::resolve($pluginId);
 
-        if ($plugin === null) {
+        if ($module === null) {
             return self::normalizeMeta([]);
         }
 
-        $raw = self::readRaw($plugin, $schema);
+        $raw = self::readRaw($module, $schema);
 
         if ($raw === null) {
             return self::normalizeMeta([]);
@@ -101,9 +102,9 @@ class FormSchema
         return self::normalizeMeta($raw['meta'] ?? [], $raw);
     }
 
-    protected static function readRaw(object $plugin, string $schema): ?array
+    protected static function readRaw(FormModule $module, string $schema): ?array
     {
-        $path = $plugin->getPluginPath()."/schemas/{$schema}.json";
+        $path = $module->getModulePath()."/schemas/{$schema}.json";
 
         if (! file_exists($path)) {
             return null;
@@ -161,14 +162,16 @@ class FormSchema
 
             $type = $field['type'] ?? $field['input'] ?? 'text';
 
-            if ($type === 'repeater') {
+            if (in_array($type, ['repeater', 'block_repeater'], true)) {
                 if (! empty($field['validation']) && is_array($field['validation'])) {
                     $rules[$name] = $field['validation'];
                 }
 
-                foreach ($field['items']['fields'] ?? [] as $subName => $subField) {
-                    if (! empty($subField['validation']) && is_array($subField['validation'])) {
-                        $rules["{$name}.*.{$subName}"] = $subField['validation'];
+                if ($type === 'repeater') {
+                    foreach ($field['items']['fields'] ?? [] as $subName => $subField) {
+                        if (! empty($subField['validation']) && is_array($subField['validation'])) {
+                            $rules["{$name}.*.{$subName}"] = $subField['validation'];
+                        }
                     }
                 }
 

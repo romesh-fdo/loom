@@ -7,8 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Loom\Features\Contracts\FormModule;
 use Loom\Support\FormSchema;
-use Loom\System\PluginBase;
+use Loom\Support\ModuleResolver;
 
 abstract class FormResourceController extends Controller
 {
@@ -123,9 +124,20 @@ abstract class FormResourceController extends Controller
         return FormSchema::mapValidatedToModel($validated, $formDefinitions, $this->pluginId());
     }
 
-    protected function plugin(): PluginBase
+    protected function module(): FormModule
     {
-        return app('loom.plugins')->getPlugin($this->pluginId());
+        $module = ModuleResolver::resolve($this->pluginId());
+
+        if ($module === null) {
+            abort(500, "Module not found: {$this->pluginId()}");
+        }
+
+        return $module;
+    }
+
+    protected function plugin(): FormModule
+    {
+        return $this->module();
     }
 
     /**

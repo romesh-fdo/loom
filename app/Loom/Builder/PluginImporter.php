@@ -192,6 +192,11 @@ class PluginImporter
         };
     }
 
+    public function isReservedSlug(string $slug): bool
+    {
+        return ReservedPluginSlugs::isReserved($slug);
+    }
+
     /**
      * @return array{class: string, table: string}
      */

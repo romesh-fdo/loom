@@ -2,7 +2,9 @@
 
 namespace Loom\System;
 
-abstract class PluginBase
+use Loom\Features\Contracts\FormModule;
+
+abstract class PluginBase implements FormModule
 {
     protected string $vendor;
 
@@ -55,6 +57,11 @@ abstract class PluginBase
     }
 
     public function getPluginPath(): string
+    {
+        return $this->path;
+    }
+
+    public function getModulePath(): string
     {
         return $this->path;
     }

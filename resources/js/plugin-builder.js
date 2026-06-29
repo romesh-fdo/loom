@@ -131,19 +131,42 @@ function syncFieldNameManualState(fieldRow) {
 }
 
 function reindexValidationRules(fieldRow) {
-    const container = fieldRow.querySelector('[data-plugin-builder-rules]');
+    const container = fieldRow.querySelector('[data-plugin-builder-validation-rules-list]');
     const fieldIndex = fieldRow.dataset.index;
 
     if (!container || fieldIndex === undefined) {
         return;
     }
 
-    container.querySelectorAll('[data-plugin-builder-rule-row]').forEach((row, ruleIndex) => {
+    container.querySelectorAll('[data-plugin-builder-validation-rule]').forEach((row, ruleIndex) => {
         row.querySelectorAll('input[name]').forEach((input) => {
             const suffix = input.name.includes('[rule]') ? '[rule]' : '[message]';
             input.name = `fields[${fieldIndex}][validation_rules][${ruleIndex}]${suffix}`;
         });
     });
+}
+
+function appendValidationRule(fieldRow) {
+    const template = document.querySelector('[data-plugin-builder-validation-rule-template]');
+    const list = fieldRow.querySelector('[data-plugin-builder-validation-rules-list]');
+    const fieldIndex = fieldRow.dataset.index;
+
+    if (!template?.content || !list || fieldIndex === undefined) {
+        return;
+    }
+
+    const ruleIndex = list.querySelectorAll('[data-plugin-builder-validation-rule]').length;
+    const html = template.innerHTML
+        .replace(/__INDEX__/g, fieldIndex)
+        .replace(/__RULE_INDEX__/g, String(ruleIndex));
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = html.trim();
+    const row = wrapper.firstElementChild;
+
+    if (row) {
+        list.appendChild(row);
+        reindexValidationRules(fieldRow);
+    }
 }
 
 function initIconPicker(root) {
@@ -245,33 +268,6 @@ function initIconPicker(root) {
         loadIcons('');
         setTimeout(() => searchInput.focus(), 0);
     });
-}
-
-function createRuleRow(fieldIndex, ruleIndex) {
-    const row = document.createElement('div');
-    row.className = 'row g-1 align-items-center';
-    row.dataset.pluginBuilderRuleRow = '';
-    row.innerHTML = `
-        <div class="col-md-4">
-            <input type="text"
-                   name="fields[${fieldIndex}][validation_rules][${ruleIndex}][rule]"
-                   class="form-control form-control-sm font-monospace"
-                   placeholder="e.g. required, max:255">
-        </div>
-        <div class="col-md">
-            <input type="text"
-                   name="fields[${fieldIndex}][validation_rules][${ruleIndex}][message]"
-                   class="form-control form-control-sm"
-                   placeholder="Custom message (optional)">
-        </div>
-        <div class="col-auto">
-            <button type="button" class="btn btn-sm btn-outline-danger" data-plugin-builder-remove-rule aria-label="Remove rule">
-                <i class="bi bi-x-lg"></i>
-            </button>
-        </div>
-    `;
-
-    return row;
 }
 
 const PLUGIN_BUILDER_SAVE_STEPS = [
@@ -516,28 +512,23 @@ export function initPluginBuilder() {
             return;
         }
 
-        const addRuleBtn = event.target.closest('[data-plugin-builder-add-rule]');
+        const addRuleBtn = event.target.closest('[data-plugin-builder-add-validation-rule]');
 
         if (addRuleBtn) {
             const fieldRow = addRuleBtn.closest('[data-plugin-builder-field]');
-            const rulesContainer = fieldRow?.querySelector('[data-plugin-builder-rules]');
-            const fieldIndex = fieldRow?.dataset.index;
 
-            if (!rulesContainer || fieldIndex === undefined) {
-                return;
+            if (fieldRow) {
+                appendValidationRule(fieldRow);
             }
 
-            const ruleIndex = rulesContainer.querySelectorAll('[data-plugin-builder-rule-row]').length;
-            rulesContainer.appendChild(createRuleRow(fieldIndex, ruleIndex));
-            reindexValidationRules(fieldRow);
             return;
         }
 
-        const removeRuleBtn = event.target.closest('[data-plugin-builder-remove-rule]');
+        const removeRuleBtn = event.target.closest('[data-plugin-builder-remove-validation-rule]');
 
         if (removeRuleBtn) {
             const fieldRow = removeRuleBtn.closest('[data-plugin-builder-field]');
-            removeRuleBtn.closest('[data-plugin-builder-rule-row]')?.remove();
+            removeRuleBtn.closest('[data-plugin-builder-validation-rule]')?.remove();
 
             if (fieldRow) {
                 reindexValidationRules(fieldRow);

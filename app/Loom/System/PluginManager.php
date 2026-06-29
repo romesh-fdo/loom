@@ -239,21 +239,42 @@ class PluginManager
             $this->registerAll();
         }
 
-        $navigation = [];
+        return $this->buildNavigationFromItems($this->collectNavigationItems());
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function collectNavigationItems(): array
+    {
+        $items = [];
 
         foreach ($this->plugins as $plugin) {
             foreach ($plugin->registerNavigation() as $item) {
-                if (! is_array($item)) {
-                    continue;
+                if (is_array($item)) {
+                    $items[] = $item;
                 }
+            }
+        }
 
-                if (isset($item['parent']) && is_array($item['parent'])) {
-                    $this->addChildNavigationItem($navigation, $item);
-                } elseif (isset($item['sideMenu'])) {
-                    $this->addLegacyNavigationItem($navigation, $item);
-                } else {
-                    $this->addTopLevelNavigationItem($navigation, $item);
-                }
+        return $items;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $items
+     * @return array<string, array<string, mixed>>
+     */
+    public function buildNavigationFromItems(array $items): array
+    {
+        $navigation = [];
+
+        foreach ($items as $item) {
+            if (isset($item['parent']) && is_array($item['parent'])) {
+                $this->addChildNavigationItem($navigation, $item);
+            } elseif (isset($item['sideMenu'])) {
+                $this->addLegacyNavigationItem($navigation, $item);
+            } else {
+                $this->addTopLevelNavigationItem($navigation, $item);
             }
         }
 

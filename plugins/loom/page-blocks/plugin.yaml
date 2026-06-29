@@ -1,8 +1,0 @@
-name: Page Blocks
-description: Manage Page Blocks for Loom CMS
-author: Loom
-icon: bi-box
-version: 1.0.0
-route: page-blocks
-model: PageBlock
-table: loom_page_blocks

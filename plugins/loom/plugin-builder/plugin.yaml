@@ -1,6 +1,0 @@
-name: Plugin Builder
-description: Build and manage Loom plugins visually
-author: Loom
-icon: bi-code-slash
-version: 1.0.0
-route: plugin-builder

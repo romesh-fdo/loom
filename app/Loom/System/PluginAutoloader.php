@@ -11,6 +11,10 @@ class PluginAutoloader
         'Loom\\System\\' => true,
         'Loom\\Support\\' => true,
         'Loom\\Providers\\' => true,
+        'Loom\\Features\\' => true,
+        'Loom\\Console\\' => true,
+        'Loom\\Http\\' => true,
+        'Loom\\Builder\\' => true,
     ];
 
     public static function register(): void

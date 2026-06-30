@@ -83,9 +83,14 @@
     <div class="plugin-builder-fields-section mb-4">
         <div class="plugin-builder-fields-section__header">
             <h3 class="h6 mb-0">Fields</h3>
-            <button type="button" class="btn btn-sm btn-outline-primary" data-plugin-builder-add-field>
-                <i class="bi bi-plus-lg"></i> Add field
-            </button>
+            @include('admin.partials.action-submit', [
+                'icon' => 'bi-plus-lg',
+                'label' => 'Add field',
+                'variant' => 'primary',
+                'type' => 'button',
+                'extraClass' => 'admin-action-submit--compact',
+                'attributes' => ['data-plugin-builder-add-field' => ''],
+            ])
         </div>
 
         <div class="plugin-builder-fields-list" data-plugin-builder-fields>
@@ -128,18 +133,32 @@
                        placeholder="Custom message (optional)">
             </div>
             <div class="col-md-1 text-end">
-                <button type="button" class="btn btn-sm btn-outline-danger" data-plugin-builder-remove-validation-rule>
-                    <i class="bi bi-x-lg"></i>
-                </button>
+                @include('admin.partials.action-submit', [
+                    'icon' => 'bi-x-lg',
+                    'label' => 'Remove',
+                    'variant' => 'danger',
+                    'type' => 'button',
+                    'extraClass' => 'admin-action-submit--compact',
+                    'attributes' => ['data-plugin-builder-remove-validation-rule' => ''],
+                ])
             </div>
         </div>
     </template>
 
     <div class="loom-form-actions mt-4">
-        <button type="submit" class="loom-form-btn loom-form-btn--primary" data-plugin-builder-submit>
-            Save plugin
-        </button>
-        <a href="{{ route('loom.plugin-builder.index') }}" class="loom-form-btn loom-form-btn--secondary">Cancel</a>
+        @include('admin.partials.action-submit', [
+            'icon' => 'bi-check-lg',
+            'label' => 'Save plugin',
+            'variant' => 'primary',
+            'type' => 'submit',
+            'attributes' => ['data-plugin-builder-submit' => true],
+        ])
+        @include('admin.partials.action-link', [
+            'href' => route('loom.plugin-builder.index'),
+            'icon' => 'bi-x-lg',
+            'label' => 'Cancel',
+            'variant' => 'muted',
+        ])
     </div>
 </form>
 

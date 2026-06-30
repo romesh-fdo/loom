@@ -35,15 +35,17 @@
          data-item-label="{{ $itemLabel }}"
          data-min="{{ $minItems }}"
          @if ($maxItems !== null) data-max="{{ $maxItems }}" @endif
-         @if ($disabled) data-disabled="true" @endif
-         data-blocks-catalog="{{ json_encode($blocksCatalog) }}">
+         @if ($disabled) data-disabled="true" @endif>
+        <script type="application/json" data-blocks-catalog>@json($blocksCatalog)</script>
         @if (! $disabled)
-            <button type="button"
-                    class="loom-repeater__add loom-form-btn loom-form-btn--secondary"
-                    data-block-repeater-add>
-                <i class="bi bi-plus-lg"></i>
-                {{ $addLabel }}
-            </button>
+            @include('admin.partials.action-submit', [
+                'icon' => 'bi-plus-lg',
+                'label' => $addLabel,
+                'variant' => 'secondary',
+                'type' => 'button',
+                'extraClass' => 'loom-repeater__add',
+                'attributes' => ['data-block-repeater-add' => ''],
+            ])
         @endif
 
         <div class="loom-repeater__items" data-block-repeater-items @if ($value === []) hidden @endif>

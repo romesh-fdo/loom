@@ -22,6 +22,13 @@
             "section": "page",
             "rowClass": "row g-3 mb-3",
             "fields": [
+                { "name": "layout", "colClass": "col-md-6" }
+            ]
+        },
+        {
+            "section": "page",
+            "rowClass": "row g-3 mb-3",
+            "fields": [
                 { "name": "sections", "colClass": "col-12" }
             ]
         }
@@ -49,10 +56,25 @@
             "wrapperClass": "mb-0",
             "colClass": "col-md-6",
             "labelClass": "form-label",
-            "placeholder": "about-us",
-            "help": "URL slug (lowercase letters, numbers, and hyphens)",
+            "placeholder": "/ or about-us",
+            "inputGroupPrefix": "/",
+            "help": "URL path (lowercase letters, numbers, hyphens, and slashes). Use / for the site homepage. Auto-filled from the page name on create.",
             "required": true,
-            "validation": ["required", "string", "max:255", "regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/"]
+            "validation": ["required", "string", "max:255", "regex:/^\\/?(?:[a-z0-9]+(?:-[a-z0-9]+)*(?:\\/[a-z0-9]+(?:-[a-z0-9]+)*)*)?$/"]
+        },
+        "layout": {
+            "section": "page",
+            "type": "select",
+            "label": "Layout",
+            "id": "field-layout",
+            "class": "form-select",
+            "wrapperClass": "mb-0",
+            "colClass": "col-md-6",
+            "labelClass": "form-label",
+            "placeholder": "Select a layout…",
+            "help": "The theme layout used to render this page on the public site.",
+            "required": true,
+            "validation": ["required", "string", "max:255"]
         },
         "sections": {
             "section": "page",

@@ -3,66 +3,85 @@
 @section('title', 'Segments')
 @section('page-title', 'Segments')
 
+@push('styles')
+    @vite(['resources/css/segments-tree.css'])
+@endpush
+
 @section('content')
-    <div class="admin-panel">
-        <div class="admin-panel-header">
-            <h2>Segments</h2>
-            <a href="{{ route('loom.segments.create') }}" class="btn btn-sm btn-primary">
-                <i class="bi bi-plus-lg"></i> Add segment
-            </a>
+    @php
+        $adminPrefix = config('loom.admin.route_prefix', 'admin');
+    @endphp
+    <div class="admin-panel segments-panel"
+         id="segments-explorer"
+         data-tree-url="{{ route('loom.segments.tree') }}"
+         data-form-create-url="{{ route('loom.segments.form.create') }}"
+         data-form-edit-base="{{ url($adminPrefix.'/segments/form') }}"
+         data-panel-destroy-base="{{ url($adminPrefix.'/segments/panel') }}"
+         data-folders-base="{{ url($adminPrefix.'/segments/folders') }}"
+         data-index-url="{{ route('loom.segments.index') }}"
+         data-initial-segment="{{ $initialSegment }}"
+         data-initial-create="{{ $initialCreate ? '1' : '0' }}"
+         data-initial-folder="{{ $initialFolder }}">
+        <div class="admin-panel-body p-0 segments-explorer-body">
+            <aside class="segments-tree-panel" aria-label="Segment folders">
+                <div class="segments-tree-scroll">
+                    <ul class="segments-tree" id="segments-tree" role="tree"></ul>
+                </div>
+            </aside>
+            <section class="segments-form-panel" aria-label="Segment editor">
+                <div class="segments-form-empty" id="segments-form-empty">
+                    <i class="bi bi-layout-split segments-form-empty-icon" aria-hidden="true"></i>
+                    <p class="mb-0 text-muted">Select a folder or segment from the tree.</p>
+                </div>
+                <div class="segments-folder-context d-none" id="segments-folder-context" aria-live="polite"></div>
+                <div class="segments-form-content d-none" id="segments-form-content"></div>
+            </section>
         </div>
-        <div class="admin-panel-body p-3">
-            <form method="GET" action="{{ route('loom.segments.index') }}" class="mb-4">
-                <div class="input-group">
-                    <input type="search"
-                           name="q"
-                           value="{{ $search }}"
-                           class="form-control"
-                           placeholder="Search segments by name…">
-                    <button class="btn btn-outline-secondary" type="submit">Search</button>
-                </div>
-            </form>
+    </div>
 
-            <div class="theme-grid">
-                <div class="row g-3">
-                    @forelse ($segments as $segment)
-                        <div class="col-6 col-md-4 col-lg-3">
-                            <article class="theme-card segment-card h-100 {{ ($segment->enabled ?? true) ? '' : 'segment-card-disabled' }}">
-                                <div class="theme-card-media segment-card-media">
-                                    <span class="segment-card-icon" aria-hidden="true">
-                                        <i class="bi bi-layout-split"></i>
-                                    </span>
-                                    @if ($segment->enabled ?? true)
-                                        <span class="theme-card-badge badge-status success">On</span>
-                                    @else
-                                        <span class="theme-card-badge badge-status">Off</span>
-                                    @endif
-                                </div>
-                                <div class="theme-card-content">
-                                    <h3 class="theme-card-title">{{ $segment->name }}</h3>
-                                    <p class="theme-card-slug">{{ $slotLabels[$segment->slot] ?? $segment->slot }}</p>
-                                    <div class="theme-card-actions d-flex gap-2">
-                                        <a href="{{ route('loom.segments.edit', $segment->slug) }}"
-                                           class="btn btn-sm btn-outline-secondary flex-fill">
-                                            Edit
-                                        </a>
-                                    </div>
-                                </div>
-                            </article>
-                        </div>
-                    @empty
-                        <div class="col-12">
-                            <p class="text-muted mb-0">No segments for this theme yet.</p>
-                        </div>
-                    @endforelse
+    @include('admin.partials.input-modal')
+
+    <div class="modal fade segments-folder-modal"
+         id="segments-folder-modal"
+         tabindex="-1"
+         aria-labelledby="segments-folder-modal-title"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="segments-folder-modal-title" data-segments-folder-title>Move to folder</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" data-segments-folder-cancel aria-label="Close"></button>
                 </div>
+                <form data-segments-folder-form>
+                    <div class="modal-body">
+                        <label class="form-label" for="segments-folder-select">Destination folder</label>
+                        <select class="form-select" id="segments-folder-select" data-segments-folder-select></select>
+                    </div>
+                    <div class="modal-footer admin-action-group">
+                        @include('admin.partials.action-submit', [
+                            'icon' => 'bi-x-lg',
+                            'label' => 'Cancel',
+                            'variant' => 'secondary',
+                            'type' => 'button',
+                            'attributes' => [
+                                'data-bs-dismiss' => 'modal',
+                                'data-segments-folder-cancel' => '',
+                            ],
+                        ])
+                        @include('admin.partials.action-submit', [
+                            'icon' => 'bi-check-lg',
+                            'label' => 'Move',
+                            'variant' => 'primary',
+                            'type' => 'submit',
+                            'attributes' => ['data-segments-folder-accept' => ''],
+                        ])
+                    </div>
+                </form>
             </div>
-
-            @if ($segments->hasPages())
-                <div class="mt-4">
-                    {{ $segments->links() }}
-                </div>
-            @endif
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    @vite(['resources/js/segments-tree.js'])
+@endpush

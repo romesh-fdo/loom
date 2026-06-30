@@ -11,9 +11,12 @@
     <div class="admin-panel">
         <div class="admin-panel-header">
             <h2>Add theme</h2>
-            <a href="{{ route('admin.settings', ['tab' => 'theme']) }}" class="btn btn-sm btn-outline-secondary" aria-label="Back">
-                <i class="bi bi-arrow-left"></i>
-            </a>
+            @include('admin.partials.action-link', [
+                'href' => route('admin.settings', ['tab' => 'theme']),
+                'icon' => 'bi-arrow-left',
+                'label' => 'Themes',
+                'variant' => 'muted',
+            ])
         </div>
         <div class="admin-panel-body p-4">
             <form method="POST"
@@ -90,9 +93,19 @@
                             @enderror
                         </div>
 
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">Create</button>
-                            <a href="{{ route('admin.settings', ['tab' => 'theme']) }}" class="btn btn-outline-secondary">Cancel</a>
+                        <div class="loom-form-actions">
+                            @include('admin.partials.action-submit', [
+                                'icon' => 'bi-plus-lg',
+                                'label' => 'Create',
+                                'variant' => 'primary',
+                                'type' => 'submit',
+                            ])
+                            @include('admin.partials.action-link', [
+                                'href' => route('admin.settings', ['tab' => 'theme']),
+                                'icon' => 'bi-x-lg',
+                                'label' => 'Cancel',
+                                'variant' => 'muted',
+                            ])
                         </div>
                     </div>
                 </div>

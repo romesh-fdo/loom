@@ -4,6 +4,7 @@ namespace Loom\Http\Controllers\Concerns;
 
 use Closure;
 use Loom\Support\DynamicParameterTypes;
+use Loom\Support\ParameterLayout;
 
 trait ValidatesDynamicCode
 {
@@ -87,6 +88,10 @@ trait ValidatesDynamicCode
                     }
                 }
 
+                if (! $this->validateParameterLayout($parameter, $index, $fail)) {
+                    return;
+                }
+
                 if ($parameter['type'] === 'repeater') {
                     if (! isset($parameter['item']) || ! is_string($parameter['item']) || $parameter['item'] === '') {
                         $fail('Repeater parameter at index '.$index.' must include an item variable.');
@@ -130,6 +135,10 @@ trait ValidatesDynamicCode
                 if (! in_array($parameter['type'], DynamicParameterTypes::scalarTypes(), true)) {
                     $fail('Parameter type "'.$parameter['type'].'" is not allowed.');
 
+                    return;
+                }
+
+                if (! $this->validateParameterOptions($parameter, $index, $fail)) {
                     return;
                 }
             }
@@ -179,6 +188,88 @@ trait ValidatesDynamicCode
 
                 return false;
             }
+        }
+
+        if (! $this->validateParameterLayout($parameter, $index, $fail)) {
+            return false;
+        }
+
+        if (! $this->validateParameterOptions($parameter, $index, $fail)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @param  array<string, mixed>  $parameter
+     */
+    private function validateParameterLayout(array $parameter, string|int $index, Closure $fail): bool
+    {
+        if (array_key_exists('row', $parameter)) {
+            if (! is_int($parameter['row']) || $parameter['row'] < 1 || $parameter['row'] > 12) {
+                $fail('Parameter row at index '.$index.' must be an integer between 1 and 12.');
+
+                return false;
+            }
+        }
+
+        if (array_key_exists('colClass', $parameter)) {
+            if (! is_string($parameter['colClass']) || ! ParameterLayout::isValidColClass($parameter['colClass'])) {
+                $fail('Parameter colClass at index '.$index.' is not allowed.');
+
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param  array<string, mixed>  $parameter
+     */
+    private function validateParameterOptions(array $parameter, string|int $index, Closure $fail): bool
+    {
+        if (! in_array($parameter['type'], DynamicParameterTypes::optionTypes(), true)) {
+            if (array_key_exists('options', $parameter)) {
+                $fail('Parameter at index '.$index.' must not include options for type "'.$parameter['type'].'".');
+
+                return false;
+            }
+
+            return true;
+        }
+
+        if (! isset($parameter['options']) || ! is_array($parameter['options']) || $parameter['options'] === []) {
+            $fail('Parameter at index '.$index.' must include at least one option.');
+
+            return false;
+        }
+
+        $values = [];
+
+        foreach ($parameter['options'] as $optionIndex => $option) {
+            if (! is_array($option)) {
+                $fail('Option at index '.$index.'.'.$optionIndex.' must be an object.');
+
+                return false;
+            }
+
+            foreach (['value', 'label'] as $key) {
+                if (! isset($option[$key]) || ! is_string($option[$key]) || $option[$key] === '') {
+                    $fail('Option at index '.$index.'.'.$optionIndex.' is missing a valid '.$key.'.');
+
+                    return false;
+                }
+            }
+
+            if (in_array($option['value'], $values, true)) {
+                $fail('Parameter at index '.$index.' has duplicated option value "'.$option['value'].'".');
+
+                return false;
+            }
+
+            $values[] = $option['value'];
         }
 
         return true;

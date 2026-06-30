@@ -1,11 +1,18 @@
 import * as bootstrap from 'bootstrap';
 import { confirmAction } from './admin-notifications';
-import { EditorView, Decoration, keymap } from '@codemirror/view';
-import { EditorState, StateField, Prec } from '@codemirror/state';
-import { basicSetup } from 'codemirror';
-import { html } from '@codemirror/lang-html';
-import { javascript } from '@codemirror/lang-javascript';
-import { oneDark } from '@codemirror/theme-one-dark';
+import {
+    ALLOWED_COL_CLASSES,
+    defaultColClassForType,
+} from './dynamic-parameter-fields';
+import {
+    EditorView,
+    Decoration,
+    keymap,
+    EditorState,
+    StateField,
+    Prec,
+    buildCodeEditorExtensions,
+} from './code-editor';
 
 const DATA_PLACEHOLDER_PATTERN = /\{\{\s*\$(\w+)\[['"]([^'"]+)['"]\]\s*\}\}/g;
 const LEGACY_PLACEHOLDER_PATTERN = /\{\{\s*([a-zA-Z][a-zA-Z0-9_]*)\.([a-z][a-z0-9_]*)\s*\}\}/g;
@@ -28,14 +35,6 @@ function parseParameterTypeLabels(raw) {
     } catch {
         return { ...FALLBACK_PARAMETER_TYPE_LABELS };
     }
-}
-
-function getCodeLanguage(language) {
-    if (language === 'javascript' || language === 'js') {
-        return javascript();
-    }
-
-    return html();
 }
 
 function slugifyName(label) {
@@ -61,6 +60,45 @@ function singularizeName(name) {
 
 function buildPlaceholderToken(name, prefix = 'blockData') {
     return `{{ $${prefix}['${name}'] }}`;
+}
+
+function buildMediaPlaceholderToken(name, prefix = 'blockData') {
+    return `<img src="{{ $${prefix}['${name}']['url'] }}" alt="{{ $${prefix}['${name}']['alt'] }}" class="{{ $${prefix}['${name}']['class'] }}" />`;
+}
+
+function isMediaParameterType(type) {
+    return type === 'media_selector' || type === 'media_attach';
+}
+
+const OPTION_PARAMETER_TYPES = new Set(['select', 'radio']);
+const CONTEXT_MENU_FIELD_TYPES = new Set(['select', 'radio', 'checkbox']);
+
+function isOptionParameterType(type) {
+    return OPTION_PARAMETER_TYPES.has(type);
+}
+
+function isContextMenuFieldType(type) {
+    return isMediaParameterType(type) || CONTEXT_MENU_FIELD_TYPES.has(type);
+}
+
+function modalTitleForParameterType(type, insideLoop = false) {
+    if (isMediaParameterType(type)) {
+        return type === 'media_attach' ? 'Media attach' : 'Media selector';
+    }
+
+    if (type === 'select') {
+        return 'Dynamic select';
+    }
+
+    if (type === 'radio') {
+        return 'Dynamic radio';
+    }
+
+    if (type === 'checkbox') {
+        return 'Dynamic checkbox';
+    }
+
+    return insideLoop ? 'Make dynamic text (inside loop)' : 'Make dynamic text';
 }
 
 function buildLoopPlaceholderToken(name, itemName) {
@@ -287,6 +325,35 @@ function findLoopPlaceholderRanges(doc, name, itemName) {
     return findPlaceholderRanges(doc, name, itemName);
 }
 
+const DYNAMIC_EDITOR_MIN_LINES = 10;
+
+function fitDynamicEditorHeight(view, minLines = DYNAMIC_EDITOR_MIN_LINES) {
+    const lineHeight = view.defaultLineHeight ?? 19;
+    const lines = Math.max(view.state.doc.lines, minLines);
+
+    view.dom.style.height = `${(lines * lineHeight) + 4}px`;
+}
+
+function dynamicEditorAutoHeightExtension(minLines = DYNAMIC_EDITOR_MIN_LINES) {
+    return [
+        EditorView.updateListener.of((update) => {
+            if (update.docChanged || update.geometryChanged) {
+                fitDynamicEditorHeight(update.view, minLines);
+            }
+        }),
+        EditorView.theme({
+            '&': {
+                height: 'auto',
+                minHeight: '0',
+                maxHeight: '60vh',
+            },
+            '.cm-scroller': {
+                overflow: 'auto',
+            },
+        }),
+    ];
+}
+
 function createDynamicCodeEditor(root) {
     if (root.dataset.initialized === 'true') {
         return;
@@ -298,7 +365,7 @@ function createDynamicCodeEditor(root) {
     const menuId = root.dataset.menuId;
     const language = root.dataset.language || 'html';
     const placeholderPrefix = root.dataset.placeholderPrefix || 'blockData';
-    const parameterTypeLabels = parseParameterTypeLabels(root.dataset.parameterTypes);
+    const parameterTypeLabels = parseParameterTypeLabels(root.dataset.allParameterTypes || root.dataset.parameterTypes);
     const isDisabled = root.dataset.disabled === 'true';
     const isReadonly = root.dataset.readonly === 'true';
 
@@ -324,7 +391,17 @@ function createDynamicCodeEditor(root) {
     const paramLabelInput = modalEl.querySelector('[data-dynamic-code-param-label]');
     const paramNameInput = modalEl.querySelector('[data-dynamic-code-param-name]');
     const paramTipInput = modalEl.querySelector('[data-dynamic-code-param-tip]');
+    const paramRowInput = modalEl.querySelector('[data-dynamic-code-param-row]');
+    const paramColClassInput = modalEl.querySelector('[data-dynamic-code-param-col-class]');
+    const paramOptionsWrap = modalEl.querySelector('[data-dynamic-code-param-options-wrap]');
+    const paramOptionsList = modalEl.querySelector('[data-dynamic-code-param-options-list]');
+    const paramOptionsAddBtn = modalEl.querySelector('[data-dynamic-code-param-options-add]');
     const makeDynamicBtn = contextMenu?.querySelector('[data-dynamic-code-make-dynamic]');
+    const makeSelectBtn = contextMenu?.querySelector('[data-dynamic-code-make-select]');
+    const makeRadioBtn = contextMenu?.querySelector('[data-dynamic-code-make-radio]');
+    const makeCheckboxBtn = contextMenu?.querySelector('[data-dynamic-code-make-checkbox]');
+    const makeMediaSelectorBtn = contextMenu?.querySelector('[data-dynamic-code-make-media-selector]');
+    const makeMediaAttachBtn = contextMenu?.querySelector('[data-dynamic-code-make-media-attach]');
     const makeLoopBtn = contextMenu?.querySelector('[data-dynamic-code-make-loop]');
 
     const loopModalTitle = loopModalEl.querySelector('[data-dynamic-code-loop-modal-title]');
@@ -336,132 +413,148 @@ function createDynamicCodeEditor(root) {
     const loopTipInput = loopModalEl.querySelector('[data-dynamic-code-loop-tip]');
 
     const initial = parseStoredValue(hiddenInput.value);
-    let parameters = [...initial.parameters];
+    let parameters = structuredClone(initial.parameters);
+    let syncHiddenInputTimer = null;
     let pendingSelection = null;
     let stashedContextSelection = null;
     let editingParameterName = null;
     let editingLoopName = null;
     let editingSubField = null;
     let activeLoopContext = null;
+    let pendingParameterMode = null;
 
     const shortcutHandlers = {
-        openDynamicModal: null,
+        showSelectionMenu: null,
     };
 
-    const editor = new EditorView({
-        state: EditorState.create({
-            doc: initial.template,
-            extensions: [
-                basicSetup,
-                getCodeLanguage(language),
-                placeholderField,
-                Prec.highest(keymap.of([
-                    {
-                        key: 'Mod-a',
-                        run(view) {
-                            if (isDisabled || isReadonly) {
+    const dynamicExtensions = buildCodeEditorExtensions({
+        language,
+        lineWrap: true,
+        minHeight: '0',
+        editable: !isDisabled && !isReadonly,
+        extraExtensions: [
+            placeholderField,
+            Prec.highest(keymap.of([
+                        {
+                            key: 'Mod-Shift-d',
+                            run(view) {
+                                if (isDisabled || isReadonly) {
+                                    return false;
+                                }
+
+                                const selection = view.state.selection.main;
+
+                                if (selection.empty) {
+                                    return false;
+                                }
+
+                                if (selectionOverlapsPlaceholder(view.state.doc, selection.from, selection.to)) {
+                                    return false;
+                                }
+
+                                shortcutHandlers.showSelectionMenu?.(view);
+
+                                return true;
+                            },
+                        },
+                    ])),
+                    EditorView.updateListener.of((update) => {
+                        if (update.docChanged) {
+                            scheduleSyncHiddenInput();
+                        }
+
+                        if (update.selectionSet) {
+                            const selection = update.state.selection.main;
+
+                            if (! selection.empty) {
+                                stashedContextSelection = {
+                                    from: selection.from,
+                                    to: selection.to,
+                                };
+                            }
+                        }
+                    }),
+                    EditorView.domEventHandlers({
+                        mousedown(event, view) {
+                            if (isDisabled || isReadonly || event.button !== 2) {
                                 return false;
                             }
 
                             const selection = view.state.selection.main;
 
+                            if (! selection.empty) {
+                                stashedContextSelection = {
+                                    from: selection.from,
+                                    to: selection.to,
+                                };
+                            }
+
+                            return false;
+                        },
+                        contextmenu(event, view) {
+                            if (isDisabled || isReadonly) {
+                                return false;
+                            }
+
+                            const selection = getActiveSelection(view);
+
                             if (selection.empty) {
+                                hideContextMenu();
                                 return false;
                             }
 
                             if (selectionOverlapsPlaceholder(view.state.doc, selection.from, selection.to)) {
+                                hideContextMenu();
                                 return false;
                             }
 
-                            shortcutHandlers.openDynamicModal?.(view);
-
+                            event.preventDefault();
+                            event.stopPropagation();
+                            showContextMenu(event.clientX, event.clientY, selection);
                             return true;
                         },
-                    },
-                ])),
-                EditorView.updateListener.of((update) => {
-                    if (update.docChanged) {
-                        syncHiddenInput();
-                    }
+                    }),
+                    ...dynamicEditorAutoHeightExtension(),
+                    EditorView.theme({
+                        '.cm-blade-foreach-marker': {
+                            backgroundColor: 'rgba(99, 102, 241, 0.12)',
+                        },
+                    }),
+        ],
+    });
 
-                    if (update.selectionSet) {
-                        const selection = update.state.selection.main;
-
-                        if (! selection.empty) {
-                            stashedContextSelection = {
-                                from: selection.from,
-                                to: selection.to,
-                            };
-                        }
-                    }
-                }),
-                EditorView.editable.of(!isDisabled && !isReadonly),
-                EditorView.domEventHandlers({
-                    mousedown(event, view) {
-                        if (isDisabled || isReadonly || event.button !== 2) {
-                            return false;
-                        }
-
-                        const selection = view.state.selection.main;
-
-                        if (! selection.empty) {
-                            stashedContextSelection = {
-                                from: selection.from,
-                                to: selection.to,
-                            };
-                        }
-
-                        return false;
-                    },
-                    contextmenu(event, view) {
-                        if (isDisabled || isReadonly) {
-                            return false;
-                        }
-
-                        const selection = getActiveSelection(view);
-
-                        if (selection.empty) {
-                            hideContextMenu();
-                            return false;
-                        }
-
-                        if (selectionOverlapsPlaceholder(view.state.doc, selection.from, selection.to)) {
-                            hideContextMenu();
-                            return false;
-                        }
-
-                        event.preventDefault();
-                        event.stopPropagation();
-                        showContextMenu(event.clientX, event.clientY, selection);
-                        return true;
-                    },
-                }),
-                EditorView.theme({
-                    '&': {
-                        minHeight: '280px',
-                        fontSize: '0.875rem',
-                    },
-                    '.cm-scroller': {
-                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                    },
-                    '.cm-blade-foreach-marker': {
-                        backgroundColor: 'rgba(99, 102, 241, 0.12)',
-                    },
-                }),
-                oneDark,
-            ],
-        }),
+    const editor = new EditorView({
+        state: EditorState.create({ doc: initial.template, extensions: dynamicExtensions }),
         parent: mount,
     });
 
     mount.editorView = editor;
     root.dataset.initialized = 'true';
 
+    requestAnimationFrame(() => {
+        fitDynamicEditorHeight(editor);
+    });
+
+    if (document.activeElement === editor.contentDOM) {
+        editor.contentDOM.blur();
+    }
+
     function syncHiddenInput() {
         hiddenInput.value = JSON.stringify({
             template: editor.state.doc.toString(),
             parameters,
         });
+    }
+
+    function scheduleSyncHiddenInput() {
+        if (syncHiddenInputTimer !== null) {
+            window.clearTimeout(syncHiddenInputTimer);
+        }
+
+        syncHiddenInputTimer = window.setTimeout(() => {
+            syncHiddenInputTimer = null;
+            syncHiddenInput();
+        }, 250);
     }
 
     function getActiveSelection(view) {
@@ -547,13 +640,206 @@ function createDynamicCodeEditor(root) {
         target.classList.remove('d-none');
     }
 
+    function createEmptyOption() {
+        return { value: '', label: '' };
+    }
+
+    function defaultOptionsFromSelection(text) {
+        if (! text?.trim()) {
+            return [createEmptyOption(), createEmptyOption()];
+        }
+
+        const slug = slugifyName(text) || 'option_1';
+
+        return [{ value: slug, label: text.trim() }];
+    }
+
+    function buildOptionRow(option) {
+        const row = document.createElement('div');
+        row.className = 'dynamic-code-param-option row g-2 mb-2 align-items-end';
+        row.dataset.dynamicCodeParamOption = 'true';
+        row.innerHTML = `
+            <div class="col-5">
+                <label class="form-label small mb-1">Value</label>
+                <input type="text"
+                       class="form-control form-control-sm font-monospace"
+                       data-dynamic-code-param-option-value
+                       value="${escapeHtml(option.value ?? '')}"
+                       placeholder="e.g. small"
+                       autocomplete="off">
+            </div>
+            <div class="col-6">
+                <label class="form-label small mb-1">Label</label>
+                <input type="text"
+                       class="form-control form-control-sm"
+                       data-dynamic-code-param-option-label
+                       value="${escapeHtml(option.label ?? '')}"
+                       placeholder="e.g. Small"
+                       autocomplete="off">
+            </div>
+            <div class="col-1 text-end">
+                <button type="button"
+                        class="btn btn-sm btn-outline-danger dynamic-code-parameters__icon-btn"
+                        data-dynamic-code-param-option-remove
+                        aria-label="Remove option">
+                    <i class="bi bi-trash" aria-hidden="true"></i>
+                </button>
+            </div>
+        `;
+
+        row.querySelector('[data-dynamic-code-param-option-remove]')?.addEventListener('click', () => {
+            const rows = paramOptionsList?.querySelectorAll('[data-dynamic-code-param-option]') ?? [];
+
+            if (rows.length <= 1) {
+                row.querySelector('[data-dynamic-code-param-option-value]').value = '';
+                row.querySelector('[data-dynamic-code-param-option-label]').value = '';
+
+                return;
+            }
+
+            row.remove();
+        });
+
+        return row;
+    }
+
+    function renderOptionsList(options = []) {
+        if (! paramOptionsList) {
+            return;
+        }
+
+        paramOptionsList.innerHTML = '';
+        const items = options.length > 0 ? options : [createEmptyOption()];
+
+        items.forEach((option) => {
+            paramOptionsList.appendChild(buildOptionRow(option));
+        });
+    }
+
+    function readOptionsFromModal() {
+        return [...(paramOptionsList?.querySelectorAll('[data-dynamic-code-param-option]') ?? [])].map((row) => ({
+            value: row.querySelector('[data-dynamic-code-param-option-value]')?.value?.trim() ?? '',
+            label: row.querySelector('[data-dynamic-code-param-option-label]')?.value?.trim() ?? '',
+        }));
+    }
+
+    function validateOptionsInput(options) {
+        if (options.length === 0) {
+            return 'Add at least one option.';
+        }
+
+        for (let index = 0; index < options.length; index += 1) {
+            const option = options[index];
+
+            if (! option.value) {
+                return `Option ${index + 1} needs a value.`;
+            }
+
+            if (! option.label) {
+                return `Option ${index + 1} needs a label.`;
+            }
+        }
+
+        const values = options.map((option) => option.value);
+
+        if (new Set(values).size !== values.length) {
+            return 'Option values must be unique.';
+        }
+
+        return null;
+    }
+
+    function setAlignmentInModal(parameter, type) {
+        const row = Math.max(1, parseInt(parameter?.row ?? '1', 10) || 1);
+        const colClass = parameter?.colClass ?? defaultColClassForType(type);
+
+        if (paramRowInput) {
+            paramRowInput.value = String(row);
+        }
+
+        if (paramColClassInput) {
+            paramColClassInput.value = ALLOWED_COL_CLASSES.includes(colClass)
+                ? colClass
+                : defaultColClassForType(type);
+        }
+    }
+
+    function readAlignmentFromModal(type) {
+        const row = Math.max(1, parseInt(paramRowInput?.value ?? '1', 10) || 1);
+        const colClass = paramColClassInput?.value ?? defaultColClassForType(type);
+        const defaultColClass = defaultColClassForType(type);
+
+        return {
+            row: row === 1 ? null : row,
+            colClass: colClass === defaultColClass ? null : colClass,
+        };
+    }
+
+    function applyAlignmentMeta(parameter, row, colClass, type) {
+        const updated = { ...parameter };
+
+        if (row && row !== 1) {
+            updated.row = row;
+        } else {
+            delete updated.row;
+        }
+
+        const defaultColClass = defaultColClassForType(type);
+
+        if (colClass && colClass !== defaultColClass && ALLOWED_COL_CLASSES.includes(colClass)) {
+            updated.colClass = colClass;
+        } else {
+            delete updated.colClass;
+        }
+
+        return updated;
+    }
+
+    function alignmentBadgeHtml(parameter, type) {
+        const row = Math.max(1, parseInt(parameter.row ?? '1', 10) || 1);
+        const colClass = parameter.colClass ?? defaultColClassForType(type);
+        const hasCustomRow = row !== 1;
+        const hasCustomCol = colClass !== defaultColClassForType(type);
+
+        if (! hasCustomRow && ! hasCustomCol) {
+            return '';
+        }
+
+        return `<span class="badge text-bg-light dynamic-code-parameters__align-badge">R${row} · ${escapeHtml(colClass)}</span>`;
+    }
+
+    function updateParamOptionsVisibility(type) {
+        if (! paramOptionsWrap) {
+            return;
+        }
+
+        paramOptionsWrap.classList.toggle('d-none', ! isOptionParameterType(type));
+    }
+
+    function isLockedParameterType(type) {
+        return isContextMenuFieldType(type);
+    }
+
+    function defaultValueForParameterType(type, selectionText) {
+        if (isMediaParameterType(type)) {
+            return { url: '', alt: '', class: '' };
+        }
+
+        if (type === 'checkbox') {
+            return false;
+        }
+
+        return selectionText;
+    }
+
     function getRepeaterParameter(loopName) {
         return parameters.find((parameter) => parameter.name === loopName && parameter.type === 'repeater') ?? null;
     }
 
-    function openCreateModal() {
+    function openCreateModal(fixedType = null) {
         editingParameterName = null;
         editingSubField = null;
+        pendingParameterMode = fixedType;
         clearModalError();
 
         if (! pendingSelection) {
@@ -572,8 +858,13 @@ function createDynamicCodeEditor(root) {
             ? findEnclosingLoop(editor.state.doc, pendingSelection.from, pendingSelection.to)
             : null;
 
+        const resolvedType = fixedType || paramTypeInput?.value || 'text';
+
         if (modalTitle) {
-            modalTitle.textContent = activeLoopContext ? 'Make dynamic (inside loop)' : 'Make dynamic';
+            modalTitle.textContent = modalTitleForParameterType(
+                resolvedType,
+                Boolean(activeLoopContext),
+            );
         }
 
         if (modalSubmit) {
@@ -581,12 +872,12 @@ function createDynamicCodeEditor(root) {
         }
 
         if (paramTypeWrap) {
-            paramTypeWrap.classList.remove('d-none');
+            paramTypeWrap.classList.toggle('d-none', Boolean(fixedType));
         }
 
         if (paramTypeInput) {
-            paramTypeInput.value = 'text';
-            paramTypeInput.disabled = false;
+            paramTypeInput.value = resolvedType;
+            paramTypeInput.disabled = Boolean(fixedType);
         }
 
         if (paramLabelInput) {
@@ -602,6 +893,16 @@ function createDynamicCodeEditor(root) {
             paramTipInput.value = '';
         }
 
+        setAlignmentInModal({}, resolvedType);
+
+        updateParamOptionsVisibility(resolvedType);
+
+        if (isOptionParameterType(resolvedType)) {
+            renderOptionsList(defaultOptionsFromSelection(pendingSelection?.text ?? ''));
+        } else if (paramOptionsList) {
+            paramOptionsList.innerHTML = '';
+        }
+
         modal.show();
 
         modalEl.addEventListener('shown.bs.modal', () => {
@@ -609,12 +910,33 @@ function createDynamicCodeEditor(root) {
         }, { once: true });
     }
 
-    shortcutHandlers.openDynamicModal = (view) => {
+    function openCreateMediaModal(mode) {
+        hideContextMenu(false);
+        openCreateModal(mode);
+    }
+
+    function showContextMenuForSelection(view) {
         const selection = view.state.selection.main;
 
-        stageSelection(selection);
-        hideContextMenu(false);
-        openCreateModal();
+        if (selection.empty) {
+            return;
+        }
+
+        if (selectionOverlapsPlaceholder(view.state.doc, selection.from, selection.to)) {
+            return;
+        }
+
+        const coords = view.coordsAtPos(selection.from);
+
+        if (! coords) {
+            return;
+        }
+
+        showContextMenu(coords.left, coords.bottom + 4, selection);
+    }
+
+    shortcutHandlers.showSelectionMenu = (view) => {
+        showContextMenuForSelection(view);
     };
 
     function openEditModal(parameter, subField = null) {
@@ -634,10 +956,6 @@ function createDynamicCodeEditor(root) {
             modalSubmit.textContent = 'Save changes';
         }
 
-        if (paramTypeWrap) {
-            paramTypeWrap.classList.remove('d-none');
-        }
-
         const target = editingSubField
             ? (getRepeaterParameter(editingSubField.loopName)?.fields ?? []).find((field) => field.name === editingSubField.fieldName)
             : parameter;
@@ -646,8 +964,15 @@ function createDynamicCodeEditor(root) {
             return;
         }
 
+        pendingParameterMode = null;
+
+        if (paramTypeWrap) {
+            paramTypeWrap.classList.toggle('d-none', isLockedParameterType(target.type));
+        }
+
         if (paramTypeInput) {
             paramTypeInput.value = target.type || 'text';
+            paramTypeInput.disabled = isLockedParameterType(target.type);
         }
 
         if (paramLabelInput) {
@@ -661,6 +986,16 @@ function createDynamicCodeEditor(root) {
 
         if (paramTipInput) {
             paramTipInput.value = target.tip || '';
+        }
+
+        setAlignmentInModal(target, target.type || 'text');
+
+        updateParamOptionsVisibility(target.type);
+
+        if (isOptionParameterType(target.type)) {
+            renderOptionsList(target.options ?? []);
+        } else if (paramOptionsList) {
+            paramOptionsList.innerHTML = '';
         }
 
         modal.show();
@@ -762,7 +1097,7 @@ function createDynamicCodeEditor(root) {
             return 'Field name must start with a letter and contain only lowercase letters, numbers, and underscores.';
         }
 
-        if (! parameterTypeLabels[type] && type !== 'repeater') {
+        if (! parameterTypeLabels[type] && type !== 'repeater' && ! isContextMenuFieldType(type)) {
             return 'Invalid field type.';
         }
 
@@ -818,6 +1153,7 @@ function createDynamicCodeEditor(root) {
         const tipHtml = field.tip
             ? `<div class="dynamic-code-parameters__item-tip">${escapeHtml(field.tip)}</div>`
             : '';
+        const alignBadge = alignmentBadgeHtml(field, field.type);
 
         item.innerHTML = `
             <div class="dynamic-code-parameters__item-main">
@@ -825,12 +1161,17 @@ function createDynamicCodeEditor(root) {
                 <div class="dynamic-code-parameters__item-meta">
                     <code class="dynamic-code-parameters__item-name">${escapeHtml(`$${loopParameter.item}['${field.name}']`)}</code>
                     <span class="badge text-bg-secondary">${escapeHtml(typeLabel)}</span>
+                    ${alignBadge}
                 </div>
                 ${tipHtml}
             </div>
             <div class="dynamic-code-parameters__item-actions">
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-dynamic-code-edit-subfield title="Edit field">Edit</button>
-                <button type="button" class="btn btn-sm btn-outline-danger" data-dynamic-code-remove-subfield title="Remove field">Remove</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary dynamic-code-parameters__icon-btn" data-dynamic-code-edit-subfield title="Edit field" aria-label="Edit field">
+                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger dynamic-code-parameters__icon-btn" data-dynamic-code-remove-subfield title="Remove field" aria-label="Remove field">
+                    <i class="bi bi-trash" aria-hidden="true"></i>
+                </button>
             </div>
         `;
 
@@ -864,6 +1205,7 @@ function createDynamicCodeEditor(root) {
             const tipHtml = parameter.tip
                 ? `<div class="dynamic-code-parameters__item-tip">${escapeHtml(parameter.tip)}</div>`
                 : '';
+            const alignBadge = alignmentBadgeHtml(parameter, parameter.type);
 
             item.innerHTML = `
                 <div class="dynamic-code-parameters__item-main">
@@ -871,12 +1213,17 @@ function createDynamicCodeEditor(root) {
                     <div class="dynamic-code-parameters__item-meta">
                         <code class="dynamic-code-parameters__item-name">${escapeHtml(`$${placeholderPrefix}['${parameter.name}']`)}</code>
                         <span class="badge text-bg-secondary">${escapeHtml(typeLabel)}</span>
+                        ${alignBadge}
                     </div>
                     ${tipHtml}
                 </div>
                 <div class="dynamic-code-parameters__item-actions">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" data-dynamic-code-edit title="Edit">Edit</button>
-                    <button type="button" class="btn btn-sm btn-outline-danger" data-dynamic-code-remove title="Remove">Remove</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary dynamic-code-parameters__icon-btn" data-dynamic-code-edit title="Edit" aria-label="Edit parameter">
+                        <i class="bi bi-pencil" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger dynamic-code-parameters__icon-btn" data-dynamic-code-remove title="Remove" aria-label="Remove parameter">
+                        <i class="bi bi-trash" aria-hidden="true"></i>
+                    </button>
                 </div>
             `;
 
@@ -922,8 +1269,8 @@ function createDynamicCodeEditor(root) {
             .replace(/"/g, '&quot;');
     }
 
-    function applyParameterMeta(parameter, label, type, tip) {
-        const updated = {
+    function applyParameterMeta(parameter, label, type, tip, options = null, alignment = null) {
+        let updated = {
             ...parameter,
             label,
             type,
@@ -935,21 +1282,67 @@ function createDynamicCodeEditor(root) {
             delete updated.tip;
         }
 
+        if (isOptionParameterType(type)) {
+            updated.options = options ?? parameter.options ?? [];
+        } else {
+            delete updated.options;
+        }
+
+        if (alignment) {
+            updated = applyAlignmentMeta(
+                updated,
+                alignment.row ?? 1,
+                alignment.colClass ?? defaultColClassForType(type),
+                type,
+            );
+        }
+
         return updated;
     }
 
+    function applyAlignmentToParameter(parameter, type, alignment) {
+        return applyAlignmentMeta(
+            parameter,
+            alignment.row ?? 1,
+            alignment.colClass ?? defaultColClassForType(type),
+            type,
+        );
+    }
+
     function addParameterFromModal() {
-        const type = paramTypeInput?.value || 'text';
+        const type = pendingParameterMode || paramTypeInput?.value || 'text';
         const label = paramLabelInput?.value?.trim() || '';
         const name = paramNameInput?.value?.trim() || '';
         const tip = paramTipInput?.value?.trim() || '';
+        const alignment = readAlignmentFromModal(type);
         const loopName = activeLoopContext?.loopName ?? editingSubField?.loopName ?? null;
+        const isMediaType = isMediaParameterType(type);
+        const options = isOptionParameterType(type) ? readOptionsFromModal() : null;
 
         const error = validateParameterInput(name, label, type, loopName);
 
         if (error) {
             showModalError(error);
             return;
+        }
+
+        if (isOptionParameterType(type)) {
+            const optionsError = validateOptionsInput(options);
+
+            if (optionsError) {
+                showModalError(optionsError);
+                return;
+            }
+        }
+
+        function buildInsertToken(itemPrefix = placeholderPrefix) {
+            if (isMediaType) {
+                return buildMediaPlaceholderToken(name, itemPrefix);
+            }
+
+            return loopName
+                ? buildLoopPlaceholderToken(name, itemPrefix)
+                : buildPlaceholderToken(name, itemPrefix);
         }
 
         if (editingSubField) {
@@ -965,7 +1358,7 @@ function createDynamicCodeEditor(root) {
                             return field;
                         }
 
-                        return applyParameterMeta(field, label, type, tip);
+                        return applyParameterMeta(field, label, type, tip, options, alignment);
                     }),
                 };
             });
@@ -975,7 +1368,7 @@ function createDynamicCodeEditor(root) {
                     return parameter;
                 }
 
-                return applyParameterMeta(parameter, label, type, tip);
+                return applyParameterMeta(parameter, label, type, tip, options, alignment);
             });
         } else if (loopName) {
             if (! pendingSelection) {
@@ -985,17 +1378,15 @@ function createDynamicCodeEditor(root) {
 
             const repeater = getRepeaterParameter(loopName);
             const itemName = repeater?.item || activeLoopContext?.itemName || singularizeName(loopName);
-            const defaultValue = pendingSelection.text;
-            const newField = {
+            const defaultValue = defaultValueForParameterType(type, pendingSelection.text);
+            const newField = applyAlignmentToParameter({
                 name,
                 label,
                 type,
                 default: defaultValue,
-            };
-
-            if (tip) {
-                newField.tip = tip;
-            }
+                ...(tip ? { tip } : {}),
+                ...(isOptionParameterType(type) ? { options } : {}),
+            }, type, alignment);
 
             parameters = parameters.map((parameter) => {
                 if (parameter.name !== loopName || parameter.type !== 'repeater') {
@@ -1012,7 +1403,7 @@ function createDynamicCodeEditor(root) {
                 changes: {
                     from: pendingSelection.from,
                     to: pendingSelection.to,
-                    insert: buildLoopPlaceholderToken(name, itemName),
+                    insert: buildInsertToken(itemName),
                 },
             });
         } else {
@@ -1021,17 +1412,15 @@ function createDynamicCodeEditor(root) {
                 return;
             }
 
-            const defaultValue = pendingSelection.text;
-            const newParameter = {
+            const defaultValue = defaultValueForParameterType(type, pendingSelection.text);
+            const newParameter = applyAlignmentToParameter({
                 name,
                 label,
                 type,
                 default: defaultValue,
-            };
-
-            if (tip) {
-                newParameter.tip = tip;
-            }
+                ...(tip ? { tip } : {}),
+                ...(isOptionParameterType(type) ? { options } : {}),
+            }, type, alignment);
 
             parameters = [
                 ...parameters,
@@ -1042,7 +1431,7 @@ function createDynamicCodeEditor(root) {
                 changes: {
                     from: pendingSelection.from,
                     to: pendingSelection.to,
-                    insert: buildPlaceholderToken(name, placeholderPrefix),
+                    insert: buildInsertToken(),
                 },
             });
         }
@@ -1051,6 +1440,7 @@ function createDynamicCodeEditor(root) {
         stashedContextSelection = null;
         activeLoopContext = null;
         editingSubField = null;
+        pendingParameterMode = null;
         hideContextMenu(false);
         modal.hide();
         renderParametersPanel();
@@ -1271,6 +1661,56 @@ function createDynamicCodeEditor(root) {
         openCreateModal();
     });
 
+    makeSelectBtn?.addEventListener('mousedown', (event) => {
+        event.stopPropagation();
+    });
+
+    makeSelectBtn?.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openCreateMediaModal('select');
+    });
+
+    makeRadioBtn?.addEventListener('mousedown', (event) => {
+        event.stopPropagation();
+    });
+
+    makeRadioBtn?.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openCreateMediaModal('radio');
+    });
+
+    makeCheckboxBtn?.addEventListener('mousedown', (event) => {
+        event.stopPropagation();
+    });
+
+    makeCheckboxBtn?.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openCreateMediaModal('checkbox');
+    });
+
+    makeMediaSelectorBtn?.addEventListener('mousedown', (event) => {
+        event.stopPropagation();
+    });
+
+    makeMediaSelectorBtn?.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openCreateMediaModal('media_selector');
+    });
+
+    makeMediaAttachBtn?.addEventListener('mousedown', (event) => {
+        event.stopPropagation();
+    });
+
+    makeMediaAttachBtn?.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openCreateMediaModal('media_attach');
+    });
+
     makeLoopBtn?.addEventListener('mousedown', (event) => {
         event.stopPropagation();
     });
@@ -1289,12 +1729,28 @@ function createDynamicCodeEditor(root) {
     modalSubmit?.addEventListener('click', addParameterFromModal);
     loopModalSubmit?.addEventListener('click', addLoopFromModal);
 
+    paramOptionsAddBtn?.addEventListener('click', () => {
+        paramOptionsList?.appendChild(buildOptionRow(createEmptyOption()));
+    });
+
     paramLabelInput?.addEventListener('input', () => {
         if (! paramNameInput || paramNameInput.readOnly || editingParameterName || editingSubField) {
             return;
         }
 
         paramNameInput.value = slugifyName(paramLabelInput.value);
+    });
+
+    paramTypeInput?.addEventListener('change', () => {
+        if (editingParameterName || editingSubField) {
+            return;
+        }
+
+        const type = paramTypeInput.value || 'text';
+
+        if (paramColClassInput) {
+            paramColClassInput.value = defaultColClassForType(type);
+        }
     });
 
     loopLabelInput?.addEventListener('input', () => {
@@ -1315,6 +1771,7 @@ function createDynamicCodeEditor(root) {
         clearModalError();
         editingParameterName = null;
         editingSubField = null;
+        pendingParameterMode = null;
 
         if (! loopModalEl.classList.contains('show')) {
             pendingSelection = null;
@@ -1368,16 +1825,23 @@ function createDynamicCodeEditor(root) {
     syncHiddenInput();
 
     root.addEventListener('loom:sync-code', () => {
+        if (syncHiddenInputTimer !== null) {
+            window.clearTimeout(syncHiddenInputTimer);
+            syncHiddenInputTimer = null;
+        }
+
         syncHiddenInput();
     });
 }
 
-export function syncDynamicCodeEditors() {
-    document.querySelectorAll('[data-dynamic-code-editor][data-initialized="true"]').forEach((root) => {
-        root.dispatchEvent(new CustomEvent('loom:sync-code'));
+export function syncDynamicCodeEditors(root = document) {
+    const scope = root instanceof Document ? root : root;
+
+    scope.querySelectorAll('[data-dynamic-code-editor][data-initialized="true"]').forEach((editorRoot) => {
+        editorRoot.dispatchEvent(new CustomEvent('loom:sync-code'));
     });
 }
 
-export function initDynamicCodeEditors() {
-    document.querySelectorAll('[data-dynamic-code-editor]').forEach(createDynamicCodeEditor);
+export function initDynamicCodeEditors(root = document) {
+    root.querySelectorAll('[data-dynamic-code-editor]').forEach(createDynamicCodeEditor);
 }

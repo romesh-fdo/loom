@@ -2,16 +2,18 @@
 
 namespace Loom\Providers;
 
+use Alexusmai\LaravelFileManager\FileManager as PackageFileManager;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Loom\Builder\SecureFileWriter;
-use Loom\Console\ConvertThemeBladesCommand;
 use Loom\Console\CachePluginsCommand;
 use Loom\Console\ClearPluginsCommand;
+use Loom\Console\ConvertThemeBladesCommand;
 use Loom\Console\ExportThemeContentCommand;
 use Loom\Console\InstallGitHooksCommand;
 use Loom\Console\MigrateThemeStructure;
 use Loom\Features\FeatureManager;
+use Loom\Support\FileManager\FileManager;
 use Loom\System\PluginAutoloader;
 use Loom\System\PluginManager;
 
@@ -20,6 +22,8 @@ class LoomServiceProvider extends ServiceProvider
     public function register(): void
     {
         PluginAutoloader::register();
+
+        $this->app->bind(PackageFileManager::class, FileManager::class);
 
         $this->app->singleton(SecureFileWriter::class, fn () => SecureFileWriter::make());
 

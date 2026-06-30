@@ -196,9 +196,35 @@ class ThemeManager
                 continue;
             }
 
-            $patterns = $subdir === 'pages'
-                ? ['*.json']
-                : ['*.blade.php', '*.json'];
+            if ($subdir === 'pages') {
+                foreach (glob($from.'/*', GLOB_ONLYDIR) ?: [] as $pageDir) {
+                    $targetPageDir = $to.'/'.basename($pageDir);
+
+                    if (is_dir($targetPageDir)) {
+                        File::deleteDirectory($targetPageDir);
+                    }
+
+                    File::copyDirectory($pageDir, $targetPageDir);
+                }
+
+                foreach (glob($from.'/*.json') ?: [] as $file) {
+                    File::copy($file, $to.'/'.basename($file));
+                }
+
+                continue;
+            }
+
+            if ($subdir === 'segments') {
+                if (is_dir($to)) {
+                    File::deleteDirectory($to);
+                }
+
+                File::copyDirectory($from, $to);
+
+                continue;
+            }
+
+            $patterns = ['*.blade.php', '*.json'];
 
             foreach ($patterns as $pattern) {
                 foreach (glob($from.'/'.$pattern) ?: [] as $file) {

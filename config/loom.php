@@ -26,6 +26,8 @@ return [
 
     'assets' => [
         'public_path' => 'theme/'.env('LOOM_ACTIVE_THEME', 'default').'/assets',
+        'bundle' => env('LOOM_ASSET_BUNDLE', true),
+        'minify' => env('LOOM_ASSET_MINIFY', true),
     ],
 
     'media' => [

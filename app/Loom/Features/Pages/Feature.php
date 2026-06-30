@@ -24,7 +24,7 @@ class Feature extends FeatureBase
                 'url' => route('loom.pages.index'),
                 'route' => 'loom.pages.*',
                 'icon' => 'bi-file-earmark-text',
-                'order' => 150,
+                'order' => 100,
                 'parent' => [
                     'label' => 'Content',
                     'icon' => 'bi-file-earmark-text-fill',

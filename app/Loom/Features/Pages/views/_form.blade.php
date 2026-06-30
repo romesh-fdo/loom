@@ -33,19 +33,32 @@
     @endforeach
 
     <div class="loom-form-actions mt-4">
-        <button type="submit" class="loom-form-btn loom-form-btn--primary">
-            {{ isset($page) ? 'Update page' : 'Create page' }}
-        </button>
-        <a href="{{ route('loom.pages.index') }}" class="loom-form-btn loom-form-btn--secondary">Cancel</a>
+        @include('admin.partials.action-submit', [
+            'icon' => 'bi-check-lg',
+            'label' => isset($page) ? 'Update page' : 'Create page',
+            'variant' => 'primary',
+            'type' => 'submit',
+        ])
+        @include('admin.partials.action-link', [
+            'href' => route('loom.pages.index'),
+            'icon' => 'bi-x-lg',
+            'label' => 'Cancel',
+            'variant' => 'muted',
+        ])
         @if (isset($page))
-            <button type="button"
-                    data-confirm-form="delete-page-form"
-                    data-confirm="Delete this page?"
-                    data-confirm-title="Delete page"
-                    data-confirm-label="Delete"
-                    class="loom-form-btn loom-form-btn--danger ms-auto">
-                Delete
-            </button>
+            @include('admin.partials.action-submit', [
+                'icon' => 'bi-trash',
+                'label' => 'Delete',
+                'variant' => 'danger',
+                'type' => 'button',
+                'extraClass' => 'ms-auto',
+                'attributes' => [
+                    'data-confirm-form' => 'delete-page-form',
+                    'data-confirm' => 'Delete this page?',
+                    'data-confirm-title' => 'Delete page',
+                    'data-confirm-label' => 'Delete',
+                ],
+            ])
         @endif
     </div>
 </form>

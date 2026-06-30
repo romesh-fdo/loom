@@ -55,7 +55,6 @@
             "wrapperClass": "mb-0",
             "colClass": "col-12",
             "labelClass": "form-label",
-            "help": "HTML template for this block. Highlight text, right-click, and choose Make dynamic to add editable parameters.",
             "required": true,
             "disabled": false,
             "readonly": false,

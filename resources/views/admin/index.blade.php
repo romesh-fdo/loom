@@ -68,7 +68,12 @@
             <div class="admin-panel">
                 <div class="admin-panel-header">
                     <h2>Recent Orders</h2>
-                    <a href="#" class="btn btn-sm btn-outline-secondary">View all</a>
+                    @include('admin.partials.action-link', [
+                        'href' => '#',
+                        'icon' => 'bi-arrow-right',
+                        'label' => 'View all',
+                        'variant' => 'muted',
+                    ])
                 </div>
                 <div class="admin-panel-body">
                     <div class="table-responsive">

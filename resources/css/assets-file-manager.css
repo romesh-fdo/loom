@@ -1,15 +1,15 @@
-/* Dark theme overrides for alexusmai/laravel-file-manager (loads after library CSS). */
+/* Light theme overrides for alexusmai/laravel-file-manager (loads after library CSS). */
 
 .assets-panel,
 .media-panel {
-    --fm-bg: #141414;
-    --fm-surface: #1a1a1a;
-    --fm-surface-hover: #1f1f1f;
-    --fm-border: #2a2a2a;
-    --fm-text: #e5e5e5;
-    --fm-muted: #a3a3a3;
-    --fm-accent: rgba(13, 202, 240, 0.14);
-    --fm-accent-text: #7dd3fc;
+    --fm-bg: #ffffff;
+    --fm-surface: #f9fafb;
+    --fm-surface-hover: #f3f4f6;
+    --fm-border: #e5e7eb;
+    --fm-text: #1a1a1a;
+    --fm-muted: #6b7280;
+    --fm-accent: rgba(255, 46, 105, 0.1);
+    --fm-accent-text: #FF2E69;
 }
 
 /* Fill admin content area on file-manager pages. */
@@ -97,11 +97,11 @@
     --bs-btn-border-color: var(--fm-border);
     --bs-btn-color: var(--fm-text);
     --bs-btn-hover-bg: var(--fm-surface-hover);
-    --bs-btn-hover-border-color: #3a3a3a;
-    --bs-btn-hover-color: #fafafa;
-    --bs-btn-active-bg: #262626;
-    --bs-btn-active-border-color: #3a3a3a;
-    --bs-btn-active-color: #fafafa;
+    --bs-btn-hover-border-color: #d1d5db;
+    --bs-btn-hover-color: #1a1a1a;
+    --bs-btn-active-bg: #e5e7eb;
+    --bs-btn-active-border-color: #d1d5db;
+    --bs-btn-active-color: #1a1a1a;
 }
 
 .assets-panel .fm-tree {
@@ -116,7 +116,7 @@
 .assets-panel .fm-tree-branch li > p:hover,
 .assets-panel .fm-tree-branch li > p.selected {
     background-color: var(--fm-surface-hover) !important;
-    color: #fafafa !important;
+    color: #1a1a1a !important;
 }
 
 .assets-panel .fm-tree .fm-tree-disk {
@@ -183,7 +183,7 @@
 }
 
 .assets-panel .fm-table .text-hidden {
-    color: #525252 !important;
+    color: #9ca3af !important;
 }
 
 .assets-panel .fm-grid .fm-grid-item {
@@ -197,7 +197,7 @@
 }
 
 .assets-panel .fm-grid .fm-grid-item.active {
-    outline: 1px solid rgba(13, 202, 240, 0.35);
+    outline: 1px solid rgba(255, 46, 105, 0.35);
 }
 
 .assets-panel .fm-grid .fm-grid-item .fm-item-icon > i,
@@ -211,7 +211,7 @@
 }
 
 .assets-panel .fm-context-menu {
-    background-color: #1f1f1f !important;
+    background-color: #ffffff !important;
     border: 1px solid var(--fm-border);
     box-shadow: var(--admin-card-shadow);
     color: var(--fm-text);
@@ -226,13 +226,13 @@
 }
 
 .assets-panel .fm-notification .fm-notification-item {
-    background: #1f1f1f !important;
+    background: #ffffff !important;
     border-color: var(--fm-border) !important;
     color: var(--fm-text) !important;
 }
 
 .assets-panel .fm-modal .modal-content {
-    background-color: #1f1f1f;
+    background-color: #ffffff;
     border-color: var(--fm-border);
     color: var(--fm-text);
 }
@@ -249,7 +249,7 @@
 }
 
 .assets-panel .fm-modal .btn-close {
-    filter: invert(1) grayscale(100%);
+    filter: none;
 }
 
 .assets-panel .fm-modal .form-control,
@@ -263,9 +263,9 @@
 .assets-panel .fm-modal .form-control:focus,
 .assets-panel .fm-modal .form-select:focus {
     background-color: var(--fm-bg);
-    border-color: #3a3a3a;
+    border-color: #FF2E69;
     color: var(--fm-text);
-    box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 0.2rem rgba(255, 46, 105, 0.15);
 }
 
 .assets-panel .fm-modal-properties .modal-body .row:hover {
@@ -288,11 +288,11 @@
 }
 
 .assets-panel .progress {
-    background-color: #262626;
+    background-color: #e5e7eb;
 }
 
 .assets-panel .dropdown-menu {
-    background-color: #1f1f1f;
+    background-color: #ffffff;
     border-color: var(--fm-border);
 }
 
@@ -303,5 +303,5 @@
 .assets-panel .dropdown-item:hover,
 .assets-panel .dropdown-item:focus {
     background-color: var(--fm-surface-hover);
-    color: #fafafa;
+    color: #1a1a1a;
 }

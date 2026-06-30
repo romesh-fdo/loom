@@ -11,6 +11,10 @@ const TOOLBAR_OPTIONS = [
     ['clean'],
 ];
 
+function queryRichTextMounts(root) {
+    return (root instanceof Element ? root : document).querySelectorAll('[data-rich-text-editor]');
+}
+
 function syncMount(mount) {
     const targetId = mount.dataset.target;
     const textarea = targetId ? document.getElementById(targetId) : null;
@@ -24,7 +28,7 @@ function syncMount(mount) {
 }
 
 function createRichTextEditor(mount) {
-    if (mount.dataset.initialized === 'true') {
+    if (mount.dataset.initialized === 'true' || mount.__quill) {
         return;
     }
 
@@ -47,7 +51,7 @@ function createRichTextEditor(mount) {
     });
 
     if (textarea.value) {
-        quill.root.innerHTML = textarea.value;
+        quill.clipboard.dangerouslyPasteHTML(textarea.value);
     }
 
     quill.on('text-change', () => {
@@ -57,10 +61,11 @@ function createRichTextEditor(mount) {
     mount.__quill = quill;
     mount.dataset.initialized = 'true';
     syncMount(mount);
+    quill.setSelection(null);
 }
 
 export function initRichTextEditors(root = document) {
-    root.querySelectorAll('[data-rich-text-editor]').forEach((mount) => {
+    queryRichTextMounts(root).forEach((mount) => {
         if (mount.dataset.initialized === 'true') {
             return;
         }
@@ -69,8 +74,28 @@ export function initRichTextEditors(root = document) {
     });
 }
 
-export function syncRichTextEditors() {
-    document.querySelectorAll('[data-rich-text-editor][data-initialized="true"]').forEach((mount) => {
+export function destroyRichTextEditors(root = document) {
+    queryRichTextMounts(root).forEach((mount) => {
+        if (mount.__quill) {
+            mount.__quill.off('text-change');
+            mount.__quill = null;
+        }
+
+        const field = mount.closest('.loom-rich-text-field');
+        field?.querySelector(':scope > .ql-toolbar')?.remove();
+
+        mount.innerHTML = '';
+        mount.classList.remove('ql-snow', 'ql-container');
+        delete mount.dataset.initialized;
+    });
+}
+
+export function syncRichTextEditors(root = document) {
+    queryRichTextMounts(root).forEach((mount) => {
+        if (mount.dataset.initialized !== 'true') {
+            return;
+        }
+
         syncMount(mount);
     });
 }

@@ -64,6 +64,24 @@ class FieldTypeRegistry
                 'cast' => null,
                 'default_validation' => ['nullable', 'string', 'max:255'],
             ],
+            'media_finder' => [
+                'label' => 'Media finder',
+                'sql' => 'string',
+                'cast' => null,
+                'default_validation' => ['nullable', 'string', 'max:2048'],
+            ],
+            'media_selector' => [
+                'label' => 'Media selector',
+                'sql' => 'json',
+                'cast' => 'array',
+                'default_validation' => ['nullable', 'array'],
+            ],
+            'media_attach' => [
+                'label' => 'Media attach',
+                'sql' => 'json',
+                'cast' => 'array',
+                'default_validation' => ['nullable', 'array'],
+            ],
         ];
     }
 

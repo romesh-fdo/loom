@@ -10,9 +10,24 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" data-admin-confirm-cancel aria-label="Close"></button>
             </div>
             <div class="modal-body" data-admin-confirm-message>Are you sure?</div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-admin-confirm-cancel>Cancel</button>
-                <button type="button" class="btn btn-danger" data-admin-confirm-accept>Confirm</button>
+            <div class="modal-footer admin-action-group">
+                @include('admin.partials.action-submit', [
+                    'icon' => 'bi-x-lg',
+                    'label' => 'Cancel',
+                    'variant' => 'secondary',
+                    'type' => 'button',
+                    'attributes' => [
+                        'data-bs-dismiss' => 'modal',
+                        'data-admin-confirm-cancel' => '',
+                    ],
+                ])
+                @include('admin.partials.action-submit', [
+                    'icon' => 'bi-check-lg',
+                    'label' => 'Confirm',
+                    'variant' => 'danger',
+                    'type' => 'button',
+                    'attributes' => ['data-admin-confirm-accept' => ''],
+                ])
             </div>
         </div>
     </div>

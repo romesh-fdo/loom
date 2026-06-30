@@ -8,13 +8,13 @@
     <input type="hidden" name="plugin_icon" id="plugin_icon" value="{{ $selectedIcon }}">
     <div class="dropdown w-100">
         <button type="button"
-                class="btn btn-outline-secondary w-100 d-flex align-items-center gap-2 text-start plugin-builder-icon-picker__trigger"
+                class="admin-action-submit admin-action-submit--secondary admin-action-submit--stretch w-100 plugin-builder-icon-picker__trigger text-start text-truncate"
                 id="plugin_icon_trigger"
                 data-bs-toggle="dropdown"
                 data-bs-auto-close="outside"
                 aria-expanded="false">
-            <i class="bi {{ $selectedIcon }}" data-plugin-builder-icon-preview></i>
-            <span class="text-truncate" data-plugin-builder-icon-label>{{ str_replace('bi-', '', $selectedIcon) }}</span>
+            <i class="bi {{ $selectedIcon }}" data-plugin-builder-icon-preview aria-hidden="true"></i>
+            <span data-plugin-builder-icon-label>{{ str_replace('bi-', '', $selectedIcon) }}</span>
         </button>
         <div class="dropdown-menu w-100 p-2 plugin-builder-icon-picker__menu">
             <input type="search"

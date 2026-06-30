@@ -24,7 +24,7 @@ class Feature extends FeatureBase
                 'url' => route('loom.assets.index'),
                 'route' => 'loom.assets.*',
                 'icon' => 'bi-folder2-open',
-                'order' => 125,
+                'order' => 130,
                 'parent' => [
                     'label' => 'Content',
                     'icon' => 'bi-file-earmark-text-fill',

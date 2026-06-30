@@ -32,20 +32,26 @@
                     <div class="theme-card-content">
                         <h3 class="theme-card-title">{{ $theme['name'] ?? '—' }}</h3>
 
-                        <div class="theme-card-actions d-flex gap-2">
-                            <a href="{{ route('admin.settings.theme.edit', $theme['slug']) }}"
-                               class="btn btn-sm btn-outline-secondary flex-fill">
-                                Edit
-                            </a>
+                        <div class="theme-card-actions admin-action-group">
+                            @include('admin.partials.action-link', [
+                                'href' => route('admin.settings.theme.edit', $theme['slug']),
+                                'icon' => 'bi-pencil',
+                                'label' => 'Edit',
+                                'variant' => 'muted',
+                            ])
 
                             @if (($theme['slug'] ?? '') !== $activeTheme)
                                 <form method="POST"
                                       action="{{ route('admin.settings.theme.activate', $theme['slug']) }}"
-                                      class="flex-fill">
+                                      class="d-flex flex-fill">
                                     @csrf
-                                    <button type="submit" class="btn btn-sm btn-primary w-100">
-                                        Activate
-                                    </button>
+                                    @include('admin.partials.action-submit', [
+                                        'icon' => 'bi-check-circle',
+                                        'label' => 'Activate',
+                                        'variant' => 'primary',
+                                        'type' => 'submit',
+                                        'extraClass' => 'admin-action-submit--stretch',
+                                    ])
                                 </form>
                             @endif
                         </div>

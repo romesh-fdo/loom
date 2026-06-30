@@ -9,6 +9,8 @@ const TOAST_META = {
 
 let confirmModal = null;
 let confirmResolve = null;
+let inputModal = null;
+let inputResolve = null;
 
 function getToastContainer() {
     let container = document.getElementById('admin-toast-container');
@@ -79,10 +81,12 @@ function getConfirmModal() {
     if (!confirmModal) {
         confirmModal = new bootstrap.Modal(element);
 
-        element.querySelector('[data-admin-confirm-cancel]')?.addEventListener('click', () => {
-            confirmModal.hide();
-            confirmResolve?.(false);
-            confirmResolve = null;
+        element.querySelectorAll('[data-admin-confirm-cancel]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                confirmModal.hide();
+                confirmResolve?.(false);
+                confirmResolve = null;
+            });
         });
 
         element.querySelector('[data-admin-confirm-accept]')?.addEventListener('click', () => {
@@ -102,6 +106,21 @@ function getConfirmModal() {
     return confirmModal;
 }
 
+export function setActionSubmitLabel(button, label) {
+    if (! button) {
+        return;
+    }
+
+    const icon = button.querySelector('i');
+    button.textContent = '';
+
+    if (icon) {
+        button.appendChild(icon);
+    }
+
+    button.append(document.createTextNode(label));
+}
+
 export function confirmAction({
     title = 'Confirm',
     message = 'Are you sure?',
@@ -119,19 +138,165 @@ export function confirmAction({
     const titleEl = element.querySelector('[data-admin-confirm-title]');
     const messageEl = element.querySelector('[data-admin-confirm-message]');
     const acceptBtn = element.querySelector('[data-admin-confirm-accept]');
-    const cancelBtn = element.querySelector('[data-admin-confirm-cancel]');
+    const cancelBtn = element.querySelector('.modal-footer [data-admin-confirm-cancel]');
 
     titleEl.textContent = title;
     messageEl.textContent = message;
-    acceptBtn.textContent = confirmLabel;
-    cancelBtn.textContent = cancelLabel;
+    setActionSubmitLabel(acceptBtn, confirmLabel);
+    setActionSubmitLabel(cancelBtn, cancelLabel);
 
-    acceptBtn.classList.toggle('btn-danger', danger);
-    acceptBtn.classList.toggle('btn-primary', !danger);
+    acceptBtn.classList.toggle('admin-action-submit--danger', danger);
+    acceptBtn.classList.toggle('admin-action-submit--primary', ! danger);
+    acceptBtn.classList.remove('btn-danger', 'btn-primary');
 
     return new Promise((resolve) => {
         confirmResolve = resolve;
         modal.show();
+    });
+}
+
+function getInputModal() {
+    const element = document.getElementById('admin-input-modal');
+
+    if (!element) {
+        return null;
+    }
+
+    if (!inputModal) {
+        inputModal = new bootstrap.Modal(element);
+        const form = element.querySelector('[data-admin-input-form]');
+        const field = element.querySelector('[data-admin-input-field]');
+
+        const cancel = () => {
+            inputResolve?.(null);
+            inputResolve = null;
+        };
+
+        element.querySelectorAll('[data-admin-input-cancel]').forEach((btn) => {
+            btn.addEventListener('click', cancel);
+        });
+
+        element.addEventListener('hidden.bs.modal', () => {
+            if (inputResolve) {
+                inputResolve(null);
+                inputResolve = null;
+            }
+
+            field?.classList.remove('is-invalid');
+            const errorEl = element.querySelector('[data-admin-input-error]');
+
+            if (errorEl) {
+                errorEl.textContent = '';
+            }
+        });
+
+        form?.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            if (!field) {
+                return;
+            }
+
+            const value = field.value.trim();
+            const errorEl = element.querySelector('[data-admin-input-error]');
+            const validate = form._promptValidate;
+
+            if (!value) {
+                field.classList.add('is-invalid');
+
+                if (errorEl) {
+                    errorEl.textContent = 'This field is required.';
+                }
+
+                field.focus();
+
+                return;
+            }
+
+            if (typeof validate === 'function') {
+                const message = validate(value);
+
+                if (message) {
+                    field.classList.add('is-invalid');
+
+                    if (errorEl) {
+                        errorEl.textContent = message;
+                    }
+
+                    field.focus();
+
+                    return;
+                }
+            }
+
+            field.classList.remove('is-invalid');
+
+            if (errorEl) {
+                errorEl.textContent = '';
+            }
+
+            inputModal.hide();
+            inputResolve?.(value);
+            inputResolve = null;
+        });
+    }
+
+    return inputModal;
+}
+
+export function promptInput({
+    title = 'Enter a value',
+    label = 'Name',
+    defaultValue = '',
+    confirmLabel = 'Save',
+    hint = '',
+    placeholder = '',
+    validate = null,
+} = {}) {
+    const modal = getInputModal();
+
+    if (!modal) {
+        return Promise.resolve(null);
+    }
+
+    const element = document.getElementById('admin-input-modal');
+    const form = element.querySelector('[data-admin-input-form]');
+    const titleEl = element.querySelector('[data-admin-input-title]');
+    const labelEl = element.querySelector('[data-admin-input-label]');
+    const field = element.querySelector('[data-admin-input-field]');
+    const hintEl = element.querySelector('[data-admin-input-hint]');
+    const acceptBtn = element.querySelector('[data-admin-input-accept]');
+    const errorEl = element.querySelector('[data-admin-input-error]');
+
+    titleEl.textContent = title;
+    labelEl.textContent = label;
+    setActionSubmitLabel(acceptBtn, confirmLabel);
+    field.value = defaultValue;
+    field.placeholder = placeholder;
+    field.classList.remove('is-invalid');
+
+    if (errorEl) {
+        errorEl.textContent = '';
+    }
+
+    if (hint) {
+        hintEl.textContent = hint;
+        hintEl.classList.remove('d-none');
+    } else {
+        hintEl.textContent = '';
+        hintEl.classList.add('d-none');
+    }
+
+    form._promptValidate = validate;
+
+    return new Promise((resolve) => {
+        inputResolve = resolve;
+        modal.show();
+
+        window.setTimeout(() => {
+            field.focus();
+            field.select();
+        }, 150);
     });
 }
 

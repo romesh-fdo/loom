@@ -1,5 +1,6 @@
 @php
     use Loom\Support\DynamicParameterTypes;
+    use Loom\Support\ParameterLayout;
 
     $name = $name ?? '';
     $label = $label ?? null;
@@ -38,7 +39,8 @@
     $loopModalId = $id . '-loop-modal';
     $menuId = $id . '-dynamic-menu';
 
-    $parameterTypes = DynamicParameterTypes::labels();
+    $parameterTypes = DynamicParameterTypes::textModalLabels();
+    $allParameterTypes = DynamicParameterTypes::labels();
 @endphp
 
 @component('admin.fields.partials._wrapper', compact(
@@ -63,6 +65,7 @@
          data-language="{{ $language }}"
          data-placeholder-prefix="{{ $placeholderPrefix }}"
          data-parameter-types='@json($parameterTypes)'
+         data-all-parameter-types='@json($allParameterTypes)'
          @if ($disabled) data-disabled="true" @endif
          @if ($readonly) data-readonly="true" @endif>
         <div class="dynamic-code-field__editor">
@@ -72,7 +75,7 @@
         <aside class="dynamic-code-parameters" data-dynamic-code-parameters>
             <div class="dynamic-code-parameters__header">
                 <h6 class="dynamic-code-parameters__title">Dynamic parameters</h6>
-                <p class="dynamic-code-parameters__hint">Highlight text, then press <kbd>Ctrl</kbd>+<kbd>A</kbd> or right-click to add a dynamic field or loop.</p>
+                <p class="dynamic-code-parameters__hint">Highlight text, then press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd> or right-click to add dynamic text, choice fields, media, or a loop.</p>
             </div>
             <div class="dynamic-code-parameters__list" data-dynamic-code-parameters-list>
                 <p class="dynamic-code-parameters__empty text-muted mb-0" data-dynamic-code-parameters-empty>
@@ -90,7 +93,37 @@
                 class="dynamic-code-context-menu__item"
                 data-dynamic-code-make-dynamic
                 role="menuitem">
-            Make dynamic
+            Make dynamic text
+        </button>
+        <button type="button"
+                class="dynamic-code-context-menu__item"
+                data-dynamic-code-make-select
+                role="menuitem">
+            Dynamic select
+        </button>
+        <button type="button"
+                class="dynamic-code-context-menu__item"
+                data-dynamic-code-make-radio
+                role="menuitem">
+            Dynamic radio
+        </button>
+        <button type="button"
+                class="dynamic-code-context-menu__item"
+                data-dynamic-code-make-checkbox
+                role="menuitem">
+            Dynamic checkbox
+        </button>
+        <button type="button"
+                class="dynamic-code-context-menu__item"
+                data-dynamic-code-make-media-selector
+                role="menuitem">
+            Media selector
+        </button>
+        <button type="button"
+                class="dynamic-code-context-menu__item"
+                data-dynamic-code-make-media-attach
+                role="menuitem">
+            Media attach
         </button>
         <button type="button"
                 class="dynamic-code-context-menu__item"
@@ -108,7 +141,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" data-dynamic-code-modal-title>Make dynamic</h5>
+                    <h5 class="modal-title" data-dynamic-code-modal-title>Make dynamic text</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -140,7 +173,22 @@
                                pattern="[a-z][a-z0-9_]*">
                         <div class="form-text">Lowercase letters, numbers, and underscores only.</div>
                     </div>
-                    <div class="mb-0">
+                    <div class="mb-3 d-none" data-dynamic-code-param-options-wrap>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label mb-0">Options</label>
+                            @include('admin.partials.action-submit', [
+                                'icon' => 'bi-plus-lg',
+                                'label' => 'Add option',
+                                'variant' => 'secondary',
+                                'type' => 'button',
+                                'extraClass' => 'admin-action-submit--compact',
+                                'attributes' => ['data-dynamic-code-param-options-add' => ''],
+                            ])
+                        </div>
+                        <div data-dynamic-code-param-options-list></div>
+                        <div class="form-text">Each option needs a stored value and a label shown in the editor.</div>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label" for="{{ $id }}-param-tip">Tip <span class="text-muted fw-normal">(optional)</span></label>
                         <textarea class="form-control"
                                   id="{{ $id }}-param-tip"
@@ -149,11 +197,67 @@
                                   placeholder="Instructions for whoever fills in this field"></textarea>
                         <div class="form-text">Shown as helper text when editing page or segment values.</div>
                     </div>
+                    <div class="dynamic-code-param-alignments accordion accordion-flush" id="{{ $id }}-param-alignments">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed py-2"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#{{ $id }}-param-alignments-body"
+                                        aria-expanded="false"
+                                        aria-controls="{{ $id }}-param-alignments-body">
+                                    Field alignments
+                                </button>
+                            </h2>
+                            <div id="{{ $id }}-param-alignments-body"
+                                 class="accordion-collapse collapse"
+                                 data-bs-parent="#{{ $id }}-param-alignments">
+                                <div class="accordion-body pt-2 pb-0">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="{{ $id }}-param-row">Row</label>
+                                            <select class="form-select"
+                                                    id="{{ $id }}-param-row"
+                                                    data-dynamic-code-param-row>
+                                                @for ($row = 1; $row <= 12; $row++)
+                                                    <option value="{{ $row }}" @selected($row === 1)>Row {{ $row }}</option>
+                                                @endfor
+                                            </select>
+                                            <div class="form-text">Fields on the same row appear side by side.</div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="{{ $id }}-param-col-class">Column width</label>
+                                            <select class="form-select"
+                                                    id="{{ $id }}-param-col-class"
+                                                    data-dynamic-code-param-col-class>
+                                                @foreach (ParameterLayout::allowedColClasses() as $colClass)
+                                                    <option value="{{ $colClass }}">{{ $colClass }}</option>
+                                                @endforeach
+                                            </select>
+                                            <div class="form-text">Bootstrap column width in the value editor form.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="alert alert-danger mt-3 mb-0 d-none" data-dynamic-code-modal-error role="alert"></div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" data-dynamic-code-modal-submit>Add parameter</button>
+                <div class="modal-footer admin-action-group">
+                    @include('admin.partials.action-submit', [
+                        'icon' => 'bi-x-lg',
+                        'label' => 'Cancel',
+                        'variant' => 'secondary',
+                        'type' => 'button',
+                        'attributes' => ['data-bs-dismiss' => 'modal'],
+                    ])
+                    @include('admin.partials.action-submit', [
+                        'icon' => 'bi-plus-lg',
+                        'label' => 'Add parameter',
+                        'variant' => 'primary',
+                        'type' => 'button',
+                        'attributes' => ['data-dynamic-code-modal-submit' => ''],
+                    ])
                 </div>
             </div>
         </div>
@@ -212,9 +316,21 @@
                     </div>
                     <div class="alert alert-danger mt-3 mb-0 d-none" data-dynamic-code-loop-modal-error role="alert"></div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" data-dynamic-code-loop-modal-submit>Add loop</button>
+                <div class="modal-footer admin-action-group">
+                    @include('admin.partials.action-submit', [
+                        'icon' => 'bi-x-lg',
+                        'label' => 'Cancel',
+                        'variant' => 'secondary',
+                        'type' => 'button',
+                        'attributes' => ['data-bs-dismiss' => 'modal'],
+                    ])
+                    @include('admin.partials.action-submit', [
+                        'icon' => 'bi-plus-lg',
+                        'label' => 'Add loop',
+                        'variant' => 'primary',
+                        'type' => 'button',
+                        'attributes' => ['data-dynamic-code-loop-modal-submit' => ''],
+                    ])
                 </div>
             </div>
         </div>

@@ -11,9 +11,12 @@
     <div class="admin-panel">
         <div class="admin-panel-header">
             <h2>Edit theme</h2>
-            <a href="{{ route('admin.settings', ['tab' => 'theme']) }}" class="btn btn-sm btn-outline-secondary" aria-label="Back">
-                <i class="bi bi-arrow-left"></i>
-            </a>
+            @include('admin.partials.action-link', [
+                'href' => route('admin.settings', ['tab' => 'theme']),
+                'icon' => 'bi-arrow-left',
+                'label' => 'Themes',
+                'variant' => 'muted',
+            ])
         </div>
         <div class="admin-panel-body p-4 theme-edit-body">
             <form method="POST"
@@ -95,9 +98,19 @@
                             @enderror
                         </div>
 
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">Save</button>
-                            <a href="{{ route('admin.settings', ['tab' => 'theme']) }}" class="btn btn-outline-secondary">Cancel</a>
+                        <div class="loom-form-actions">
+                            @include('admin.partials.action-submit', [
+                                'icon' => 'bi-check-lg',
+                                'label' => 'Save',
+                                'variant' => 'primary',
+                                'type' => 'submit',
+                            ])
+                            @include('admin.partials.action-link', [
+                                'href' => route('admin.settings', ['tab' => 'theme']),
+                                'icon' => 'bi-x-lg',
+                                'label' => 'Cancel',
+                                'variant' => 'muted',
+                            ])
                         </div>
                     </div>
                 </div>
@@ -112,7 +125,12 @@
                       data-confirm-label="Delete">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="btn btn-outline-danger">Delete</button>
+                    @include('admin.partials.action-submit', [
+                        'icon' => 'bi-trash',
+                        'label' => 'Delete',
+                        'variant' => 'danger',
+                        'type' => 'submit',
+                    ])
                 </form>
             @endif
         </div>

@@ -75,11 +75,13 @@
                         @endforeach
                     </div>
                     <div class="modal-footer">
-                        <button type="button"
-                                class="loom-form-btn loom-form-btn--primary"
-                                data-bs-dismiss="modal">
-                            Done
-                        </button>
+                        @include('admin.partials.action-submit', [
+                            'icon' => 'bi-check-lg',
+                            'label' => 'Done',
+                            'variant' => 'primary',
+                            'type' => 'button',
+                            'attributes' => ['data-bs-dismiss' => 'modal'],
+                        ])
                     </div>
                 </div>
             </div>
@@ -87,19 +89,32 @@
     @endif
 
     <div class="loom-form-actions">
-        <button type="submit" class="loom-form-btn loom-form-btn--primary">
-            {{ isset($block) ? 'Update block' : 'Create block' }}
-        </button>
-        <a href="{{ route('loom.blocks.index') }}" class="loom-form-btn loom-form-btn--secondary">Cancel</a>
+        @include('admin.partials.action-submit', [
+            'icon' => 'bi-check-lg',
+            'label' => isset($block) ? 'Update block' : 'Create block',
+            'variant' => 'primary',
+            'type' => 'submit',
+        ])
+        @include('admin.partials.action-link', [
+            'href' => route('loom.blocks.index'),
+            'icon' => 'bi-x-lg',
+            'label' => 'Cancel',
+            'variant' => 'muted',
+        ])
         @if (isset($block))
-            <button type="button"
-                    data-confirm-form="delete-block-form"
-                    data-confirm="Delete this block?"
-                    data-confirm-title="Delete block"
-                    data-confirm-label="Delete"
-                    class="loom-form-btn loom-form-btn--danger ms-auto">
-                Delete
-            </button>
+            @include('admin.partials.action-submit', [
+                'icon' => 'bi-trash',
+                'label' => 'Delete',
+                'variant' => 'danger',
+                'type' => 'button',
+                'extraClass' => 'ms-auto',
+                'attributes' => [
+                    'data-confirm-form' => 'delete-block-form',
+                    'data-confirm' => 'Delete this block?',
+                    'data-confirm-title' => 'Delete block',
+                    'data-confirm-label' => 'Delete',
+                ],
+            ])
         @endif
     </div>
 </form>

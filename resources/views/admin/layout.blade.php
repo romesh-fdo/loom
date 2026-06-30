@@ -6,6 +6,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Admin') — {{ config('app.name', 'Loom') }}</title>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
     @vite(['resources/css/admin.css', 'resources/js/admin.js'])
     @stack('styles')
 </head>
@@ -75,6 +78,9 @@
     </div>
 
     @include('admin.partials.confirm-modal')
+    @include('admin.partials.media-parameter-modal')
+    @include('admin.partials.url-parameter-modal')
+    @include('admin.partials.media-finder-modal')
 
     <div class="toast-container position-fixed top-0 end-0 p-3 admin-flash-toasts"
          id="admin-toast-container"

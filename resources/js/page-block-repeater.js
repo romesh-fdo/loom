@@ -1,5 +1,16 @@
-import { buildScalarParameterField } from './dynamic-parameter-fields';
-import { initRichTextEditors } from './rich-text-editor';
+import {
+    buildScalarParameterField,
+    groupByRow,
+    resolveEffectiveParameterType,
+    resolveParameterColClass,
+    resolveParameterRow,
+    richTextFieldId,
+} from './dynamic-parameter-fields';
+import { destroyRichTextEditors, initRichTextEditors, syncRichTextEditors } from './rich-text-editor';
+import { initCodeEditors } from './code-editor';
+import { initDynamicCodeEditors } from './dynamic-code-editor';
+import { initMediaFinders } from './media-finder';
+import { initUrlParameters } from './url-parameter';
 
 function escapeHtml(value) {
     return String(value)
@@ -23,8 +34,82 @@ function parseCatalog(raw) {
     }
 }
 
+function readBlocksCatalog(repeater) {
+    const scriptEl = repeater.querySelector('script[data-blocks-catalog]');
+
+    if (scriptEl?.textContent) {
+        const fromScript = parseCatalog(scriptEl.textContent.trim());
+
+        if (fromScript.length > 0) {
+            return fromScript;
+        }
+    }
+
+    return parseCatalog(repeater.dataset.blocksCatalog);
+}
+
 function findBlock(catalog, blockSlug) {
     return catalog.find((block) => String(block.slug) === String(blockSlug)) ?? null;
+}
+
+function resolveParameterValue(values, parameter) {
+    const name = parameter.name;
+
+    if (Object.prototype.hasOwnProperty.call(values, name)) {
+        return values[name];
+    }
+
+    return parameter.default ?? '';
+}
+
+function defaultValuesForBlock(block) {
+    const defaults = {};
+
+    if (! block || ! Array.isArray(block.parameters)) {
+        return defaults;
+    }
+
+    block.parameters.forEach((parameter) => {
+        if (parameter?.name && parameter.default !== undefined) {
+            defaults[parameter.name] = parameter.default;
+        }
+    });
+
+    return defaults;
+}
+
+function updateParameterBaseNames(parametersEl, oldBase, newBase) {
+    if (oldBase === newBase) {
+        return;
+    }
+
+    syncRichTextEditors(parametersEl);
+
+    parametersEl.querySelectorAll('[name]').forEach((input) => {
+        const name = input.getAttribute('name');
+
+        if (! name || ! name.startsWith(`${oldBase}[`)) {
+            return;
+        }
+
+        input.name = name.replace(oldBase, newBase);
+    });
+
+    parametersEl.querySelectorAll('[data-rich-text-editor]').forEach((mount) => {
+        const textarea = mount.dataset.target ? document.getElementById(mount.dataset.target) : null;
+
+        if (! textarea?.name) {
+            return;
+        }
+
+        const newId = richTextFieldId(textarea.name);
+        textarea.id = newId;
+        mount.dataset.target = newId;
+    });
+}
+
+function hasRenderedParameters(parametersEl) {
+    return parametersEl.querySelector('.loom-form-row, [data-value-repeater]') !== null;
 }
 
 function parameterTipHtml(parameter) {
@@ -57,6 +142,24 @@ function collectParameterValues(parametersEl, baseName) {
         }
 
         const rest = name.slice(valuesPrefix.length);
+        const compoundMatch = rest.match(/^\[([^\]]+)\]\[(url|alt|class|id|target|file)\]$/);
+
+        if (compoundMatch) {
+            const [, paramName, subKey] = compoundMatch;
+
+            if (! values[paramName] || typeof values[paramName] !== 'object' || Array.isArray(values[paramName])) {
+                values[paramName] = {};
+            }
+
+            if (subKey === 'file') {
+                return;
+            }
+
+            values[paramName][subKey] = readInputValue(input);
+
+            return;
+        }
+
         const scalarMatch = rest.match(/^\[([^\]]+)\]$/);
 
         if (scalarMatch) {
@@ -92,34 +195,46 @@ function collectParameterValues(parametersEl, baseName) {
 }
 
 function buildSubFieldInput(baseName, repeaterName, rowIndex, field, value, disabled) {
+    const type = resolveEffectiveParameterType(field, value);
+
     return buildScalarParameterField({
         fieldName: `${baseName}[values][${repeaterName}][${rowIndex}][${field.name}]`,
         label: field.label ?? field.name,
-        type: field.type ?? 'text',
+        type,
         value,
         defaultValue: field.default ?? '',
         tip: field.tip,
         required: field.required,
         disabled,
         options: field.options ?? [],
-        colClass: 'col-md-6',
+        colClass: resolveParameterColClass(field, value),
         controlClass: 'form-control form-control-sm',
     });
 }
 
-function buildRepeaterRowHtml(baseName, parameter, rowIndex, rowValues, disabled) {
+function buildRepeaterFieldsHtml(baseName, parameter, rowIndex, rowValues, disabled) {
     const fields = Array.isArray(parameter.fields) ? parameter.fields : [];
-    const itemLabel = parameter.item ? `${parameter.item}` : 'Item';
-    const fieldsHtml = fields.map((field) => {
-        return buildSubFieldInput(
-            baseName,
-            parameter.name,
-            rowIndex,
-            field,
-            rowValues?.[field.name] ?? '',
-            disabled
-        );
+    const rowGroups = groupByRow(fields, resolveParameterRow);
+
+    return rowGroups.map(([, rowFields]) => {
+        const fieldsHtml = rowFields.map((field) => {
+            return buildSubFieldInput(
+                baseName,
+                parameter.name,
+                rowIndex,
+                field,
+                rowValues?.[field.name] ?? '',
+                disabled
+            );
+        }).join('');
+
+        return `<div class="row g-2">${fieldsHtml}</div>`;
     }).join('');
+}
+
+function buildRepeaterRowHtml(baseName, parameter, rowIndex, rowValues, disabled) {
+    const itemLabel = parameter.item ? `${parameter.item}` : 'Item';
+    const fieldsHtml = buildRepeaterFieldsHtml(baseName, parameter, rowIndex, rowValues, disabled);
 
     return `
         <div class="loom-value-repeater__item" data-value-repeater-item data-index="${rowIndex}">
@@ -127,7 +242,7 @@ function buildRepeaterRowHtml(baseName, parameter, rowIndex, rowValues, disabled
                 <span class="loom-value-repeater__item-label">${escapeHtml(itemLabel)} ${rowIndex + 1}</span>
                 <button type="button" class="btn btn-sm btn-outline-danger" data-value-repeater-remove${disabled ? ' disabled' : ''}>Remove</button>
             </div>
-            <div class="row g-2">${fieldsHtml}</div>
+            ${fieldsHtml}
         </div>
     `;
 }
@@ -151,6 +266,9 @@ function bindValueRepeater(container, baseName, parameter, initialRows, disabled
         }).join('');
 
         itemsEl.hidden = rowData.length === 0;
+        initRichTextEditors(itemsEl);
+        initMediaFinders(itemsEl);
+        initUrlParameters(itemsEl);
     }
 
     function getCurrentRows() {
@@ -222,9 +340,10 @@ function buildRepeaterInput(baseName, parameter, value, disabled) {
     const tipHtml = parameterTipHtml(parameter);
     const rows = Array.isArray(value) ? value : [];
     const repeaterId = `repeater-${baseName.replace(/[^a-zA-Z0-9_-]/g, '-')}-${parameter.name}`;
+    const colClass = resolveParameterColClass(parameter);
 
     return `
-        <div class="col-12" data-value-repeater-wrap="${escapeHtml(parameter.name)}">
+        <div class="${colClass}" data-value-repeater-wrap="${escapeHtml(parameter.name)}">
             <label class="form-label">${label}</label>
             ${tipHtml}
             <div class="loom-value-repeater" id="${repeaterId}" data-value-repeater data-parameter-name="${escapeHtml(parameter.name)}">
@@ -236,11 +355,11 @@ function buildRepeaterInput(baseName, parameter, value, disabled) {
 }
 
 function buildParameterInput(name, parameter, value, disabled) {
-    const type = parameter.type ?? 'text';
-
-    if (type === 'repeater') {
+    if ((parameter.type ?? 'text') === 'repeater') {
         return buildRepeaterInput(name, parameter, value, disabled);
     }
+
+    const type = resolveEffectiveParameterType(parameter, value);
 
     return buildScalarParameterField({
         fieldName: `${name}[values][${parameter.name}]`,
@@ -252,11 +371,14 @@ function buildParameterInput(name, parameter, value, disabled) {
         required: parameter.required,
         disabled,
         options: parameter.options ?? [],
+        colClass: resolveParameterColClass(parameter, value),
     });
 }
 
 function renderParameters(container, catalog, blockSlug, baseName, initialValues, disabled) {
     const block = findBlock(catalog, blockSlug);
+
+    destroyRichTextEditors(container);
     container.innerHTML = '';
 
     if (!block || !Array.isArray(block.parameters) || block.parameters.length === 0) {
@@ -268,29 +390,40 @@ function renderParameters(container, catalog, blockSlug, baseName, initialValues
     }
 
     const values = initialValues && typeof initialValues === 'object' ? initialValues : {};
+    const rowGroups = groupByRow(block.parameters, resolveParameterRow);
 
-    block.parameters.forEach((parameter) => {
-        container.insertAdjacentHTML(
-            'beforeend',
-            buildParameterInput(baseName, parameter, values[parameter.name] ?? '', disabled)
-        );
+    rowGroups.forEach(([, rowParameters]) => {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'loom-form-row row g-3 mb-3';
+        container.appendChild(rowEl);
 
-        if (parameter.type === 'repeater') {
-            const wrap = container.querySelector(`[data-value-repeater-wrap="${parameter.name}"]`);
+        rowParameters.forEach((parameter) => {
+            rowEl.insertAdjacentHTML(
+                'beforeend',
+                buildParameterInput(baseName, parameter, resolveParameterValue(values, parameter), disabled)
+            );
 
-            if (wrap) {
-                bindValueRepeater(
-                    wrap,
-                    baseName,
-                    parameter,
-                    Array.isArray(values[parameter.name]) ? values[parameter.name] : [],
-                    disabled
-                );
+            if (parameter.type === 'repeater') {
+                const wrap = rowEl.querySelector(`[data-value-repeater-wrap="${parameter.name}"]`);
+
+                if (wrap) {
+                    bindValueRepeater(
+                        wrap,
+                        baseName,
+                        parameter,
+                        Array.isArray(values[parameter.name]) ? values[parameter.name] : [],
+                        disabled
+                    );
+                }
             }
-        }
+        });
     });
 
+    initCodeEditors(container);
+    initDynamicCodeEditors(container);
     initRichTextEditors(container);
+    initMediaFinders(container);
+    initUrlParameters(container);
 }
 
 function getRowBaseName(repeater, rowIndex) {
@@ -299,34 +432,51 @@ function getRowBaseName(repeater, rowIndex) {
     return `${baseName}[${rowIndex}]`;
 }
 
+function updateBlockAccordionIds(item, repeaterId, index) {
+    const collapseId = `${repeaterId}-block-${index}-body`;
+    const collapseEl = item.querySelector('[data-block-repeater-collapse]');
+    const toggleBtn = item.querySelector('[data-block-repeater-toggle]');
+
+    if (! collapseEl || ! toggleBtn) {
+        return;
+    }
+
+    if (collapseEl.id === collapseId) {
+        return;
+    }
+
+    collapseEl.id = collapseId;
+    toggleBtn.setAttribute('data-bs-target', `#${collapseId}`);
+    toggleBtn.setAttribute('aria-controls', collapseId);
+}
+
 function reindexBlockRepeater(repeater) {
     const itemsEl = repeater.querySelector('[data-block-repeater-items]');
-    const catalog = parseCatalog(repeater.dataset.blocksCatalog);
-    const itemLabel = repeater.dataset.itemLabel || 'Block';
-    const isDisabled = repeater.dataset.disabled === 'true';
     const items = itemsEl.querySelectorAll(':scope > [data-block-repeater-item]');
+    const repeaterId = repeater.id || 'block-repeater';
 
     items.forEach((item, index) => {
+        const previousBaseName = item.dataset.baseName ?? getRowBaseName(repeater, item.dataset.index);
+        const baseName = getRowBaseName(repeater, index);
+
         item.dataset.index = String(index);
+        item.dataset.baseName = baseName;
 
-        const title = item.querySelector('[data-block-repeater-item-label]');
-
-        if (title) {
-            title.textContent = `${itemLabel} ${index + 1}`;
-        }
+        updateBlockAccordionIds(item, repeaterId, index);
 
         const select = item.querySelector('[data-block-repeater-select]');
         const parametersEl = item.querySelector('[data-block-repeater-parameters]');
-        const baseName = getRowBaseName(repeater, index);
 
         if (select) {
             select.name = `${baseName}[block_slug]`;
         }
 
-        if (select && parametersEl) {
-            const currentValues = collectParameterValues(parametersEl, baseName);
+        if (! select || ! parametersEl || ! hasRenderedParameters(parametersEl)) {
+            return;
+        }
 
-            renderParameters(parametersEl, catalog, select.value, baseName, currentValues, isDisabled);
+        if (previousBaseName !== baseName) {
+            updateParameterBaseNames(parametersEl, previousBaseName, baseName);
         }
     });
 
@@ -338,7 +488,7 @@ function reindexBlockRepeater(repeater) {
 }
 
 function bindBlockRepeaterRow(repeater, item) {
-    const catalog = parseCatalog(repeater.dataset.blocksCatalog);
+    const catalog = readBlocksCatalog(repeater);
     const isDisabled = repeater.dataset.disabled === 'true';
     const select = item.querySelector('[data-block-repeater-select]');
     const parametersEl = item.querySelector('[data-block-repeater-parameters]');
@@ -359,12 +509,28 @@ function bindBlockRepeaterRow(repeater, item) {
 
     const rowIndex = item.dataset.index;
     const baseName = getRowBaseName(repeater, rowIndex);
+    item.dataset.baseName = baseName;
 
-    renderParameters(parametersEl, catalog, select.value, baseName, initialValues, isDisabled);
+    if (hasRenderedParameters(parametersEl) && select.value) {
+        initRichTextEditors(parametersEl);
+        initMediaFinders(parametersEl);
+        initUrlParameters(parametersEl);
+    } else {
+        renderParameters(parametersEl, catalog, select.value, baseName, initialValues, isDisabled);
+    }
 
     select.addEventListener('change', () => {
         const index = item.dataset.index;
-        renderParameters(parametersEl, catalog, select.value, getRowBaseName(repeater, index), {}, isDisabled);
+        const block = findBlock(catalog, select.value);
+
+        renderParameters(
+            parametersEl,
+            catalog,
+            select.value,
+            getRowBaseName(repeater, index),
+            defaultValuesForBlock(block),
+            isDisabled
+        );
     });
 
     const removeBtn = item.querySelector('[data-block-repeater-remove]');

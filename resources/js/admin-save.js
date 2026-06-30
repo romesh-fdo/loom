@@ -1,4 +1,5 @@
-import { showAdminToast } from './admin-notifications';
+import { showAdminToast, setActionSubmitLabel } from './admin-notifications';
+import { syncCodeEditors } from './code-editor';
 import { syncDynamicCodeEditors } from './dynamic-code-editor';
 import { syncRichTextEditors } from './rich-text-editor';
 
@@ -24,8 +25,9 @@ export async function saveAdminForm(form) {
         return false;
     }
 
-    syncDynamicCodeEditors();
-    syncRichTextEditors();
+    syncCodeEditors(form);
+    syncDynamicCodeEditors(form);
+    syncRichTextEditors(form);
 
     form.dataset.saving = 'true';
 
@@ -34,7 +36,7 @@ export async function saveAdminForm(form) {
 
     if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Saving…';
+        setActionSubmitLabel(submitBtn, 'Saving…');
     }
 
     try {
@@ -78,12 +80,38 @@ export async function saveAdminForm(form) {
 
         if (submitBtn) {
             submitBtn.disabled = false;
-            submitBtn.textContent = submitLabel;
+            setActionSubmitLabel(submitBtn, submitLabel);
         }
     }
 }
 
 export function initAdminSaveShortcut() {
+    document.addEventListener('submit', (event) => {
+        const form = event.target;
+
+        if (!(form instanceof HTMLFormElement)) {
+            return;
+        }
+
+        if (form.querySelector('[data-rich-text-editor]')) {
+            syncRichTextEditors(form);
+        }
+
+        if (form.querySelector('[data-code-editor]')) {
+            syncCodeEditors(form);
+        }
+
+        if (form.hasAttribute('data-plugin-builder-form')) {
+            return;
+        }
+
+        if (! form.querySelector('[data-dynamic-code-editor]')) {
+            return;
+        }
+
+        syncDynamicCodeEditors(form);
+    }, true);
+
     document.addEventListener('keydown', (event) => {
         if (! (event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 's') {
             return;

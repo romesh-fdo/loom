@@ -24,7 +24,7 @@ class Feature extends FeatureBase
                 'url' => route('loom.segments.index'),
                 'route' => 'loom.segments.*',
                 'icon' => 'bi-layout-split',
-                'order' => 110,
+                'order' => 120,
                 'parent' => [
                     'label' => 'Content',
                     'icon' => 'bi-file-earmark-text-fill',

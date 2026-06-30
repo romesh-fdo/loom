@@ -4,62 +4,12 @@ import { initAdminSaveShortcut } from './admin-save';
 import { initDynamicCodeEditors } from './dynamic-code-editor';
 import { initPluginBuilder } from './plugin-builder';
 import { initPageBlockRepeater } from './page-block-repeater';
+import { initPageForm } from './page-form';
 import { initRichTextEditors } from './rich-text-editor';
-import { EditorView, basicSetup } from 'codemirror';
-import { html } from '@codemirror/lang-html';
-import { javascript } from '@codemirror/lang-javascript';
-import { oneDark } from '@codemirror/theme-one-dark';
-
-function getCodeLanguage(language) {
-    if (language === 'javascript' || language === 'js') {
-        return javascript();
-    }
-
-    return html();
-}
-
-function initCodeEditors() {
-    document.querySelectorAll('[data-code-editor]').forEach((mount) => {
-        const targetId = mount.dataset.target;
-        const textarea = targetId ? document.getElementById(targetId) : null;
-
-        if (!textarea || mount.dataset.initialized === 'true') {
-            return;
-        }
-
-        const language = mount.dataset.language || 'html';
-        const isDisabled = mount.dataset.disabled === 'true';
-        const isReadonly = mount.dataset.readonly === 'true';
-
-        const editor = new EditorView({
-            doc: textarea.value,
-            extensions: [
-                basicSetup,
-                getCodeLanguage(language),
-                EditorView.updateListener.of((update) => {
-                    if (update.docChanged) {
-                        textarea.value = update.state.doc.toString();
-                    }
-                }),
-                EditorView.editable.of(!isDisabled && !isReadonly),
-                EditorView.theme({
-                    '&': {
-                        minHeight: '280px',
-                        fontSize: '0.875rem',
-                    },
-                    '.cm-scroller': {
-                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                    },
-                }),
-                oneDark,
-            ],
-            parent: mount,
-        });
-
-        mount.dataset.initialized = 'true';
-        mount.editorView = editor;
-    });
-}
+import { initMediaFinders } from './media-finder';
+import { initUrlParameters } from './url-parameter';
+import { initLayoutForm } from './layout-form';
+import { initCodeEditors } from './code-editor';
 
 function initSidebar() {
     const sidebar = document.getElementById('admin-sidebar');
@@ -291,6 +241,11 @@ function initRepeaters() {
             item.classList.remove('d-none');
             itemsEl.appendChild(item);
             reindex();
+            initCodeEditors(item);
+            initDynamicCodeEditors(item);
+            initRichTextEditors(item);
+            initMediaFinders(item);
+            initUrlParameters(item);
         });
 
         repeater.addEventListener('click', (event) => {
@@ -321,12 +276,22 @@ document.addEventListener('DOMContentLoaded', () => {
     initSidebar();
     initNavGroups();
     initCodeEditors();
+    initLayoutForm();
     initDynamicCodeEditors();
     initPluginBuilder();
     initFilePreviews();
     initRepeaters();
     initPageBlockRepeater();
+    initPageForm();
     initRichTextEditors();
+    initMediaFinders();
+    initUrlParameters();
+
+    const active = document.activeElement;
+
+    if (active instanceof HTMLElement && active.closest('.cm-editor, .ql-editor, [contenteditable="true"]')) {
+        active.blur();
+    }
 
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
         new bootstrap.Tooltip(el);

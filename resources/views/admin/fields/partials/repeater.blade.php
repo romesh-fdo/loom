@@ -38,12 +38,14 @@
          @if ($maxItems !== null) data-max="{{ $maxItems }}" @endif
          @if ($disabled) data-disabled="true" @endif>
         @if (! $disabled)
-            <button type="button"
-                    class="loom-repeater__add loom-form-btn loom-form-btn--secondary"
-                    data-repeater-add>
-                <i class="bi bi-plus-lg"></i>
-                {{ $addLabel }}
-            </button>
+            @include('admin.partials.action-submit', [
+                'icon' => 'bi-plus-lg',
+                'label' => $addLabel,
+                'variant' => 'secondary',
+                'type' => 'button',
+                'extraClass' => 'loom-repeater__add',
+                'attributes' => ['data-repeater-add' => ''],
+            ])
         @endif
 
         <div class="loom-repeater__items" data-repeater-items @if ($value === []) hidden @endif>

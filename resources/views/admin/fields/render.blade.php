@@ -1,7 +1,7 @@
 @php
     $allowedTypes = [
-        'text', 'email', 'password', 'number', 'textarea', 'select',
-        'checkbox', 'radio', 'date', 'datetime-local', 'file', 'hidden', 'code', 'dynamic_code', 'color', 'repeater', 'richtext',
+        'text', 'email', 'url', 'password', 'number', 'textarea', 'select',
+        'checkbox', 'radio', 'date', 'datetime-local', 'file', 'media_finder', 'hidden', 'code', 'dynamic_code', 'color', 'repeater', 'richtext',
     ];
 @endphp
 

@@ -7,16 +7,20 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Loom\Http\Controllers\ThemeFileResourceController;
 use Loom\Support\FormSchema;
+use Loom\Support\MediaParameterProcessor;
 use Loom\Support\ThemeContent\BlockStore;
+use Loom\Support\ThemeContent\LayoutStore;
 use Loom\Support\ThemeContent\PageStore;
 use Loom\Support\ThemeContent\ThemeFileRecord;
 use Loom\Support\ThemeContent\ThemeFileStore;
+use Loom\Support\UrlParameterProcessor;
 
 class PagesController extends ThemeFileResourceController
 {
     public function __construct(
         protected PageStore $pages,
         protected BlockStore $blocks,
+        protected LayoutStore $layouts,
     ) {}
 
     public function index(Request $request): View
@@ -31,9 +35,14 @@ class PagesController extends ThemeFileResourceController
             $this->activeThemeSlug()
         );
 
+        $layoutNames = $this->layouts->all($this->activeThemeSlug())
+            ->mapWithKeys(fn (ThemeFileRecord $layout) => [$layout->slug => $layout->name])
+            ->all();
+
         return view('loom-pages::index', [
             'pages' => $pages,
             'search' => $search->toString(),
+            'layoutNames' => $layoutNames,
         ]);
     }
 
@@ -41,12 +50,38 @@ class PagesController extends ThemeFileResourceController
     {
         $data = parent::formViewData($record);
         $catalog = $this->blocksCatalog();
+        $layouts = $this->layoutsCatalog();
+        $layoutOptions = collect($layouts)
+            ->map(fn (array $layout) => [
+                'value' => $layout['slug'],
+                'label' => $layout['name'],
+            ])
+            ->all();
 
         if (isset($data['forms']['basic-form']['fields']['sections'])) {
             $data['forms']['basic-form']['fields']['sections']['blocksCatalog'] = $catalog;
         }
 
+        if (isset($data['forms']['basic-form']['fields']['layout'])) {
+            $data['forms']['basic-form']['fields']['layout']['options'] = $layoutOptions;
+
+            $currentValue = $data['forms']['basic-form']['fields']['layout']['value'] ?? '';
+
+            if ($record === null && ($currentValue === '' || $currentValue === null) && $layoutOptions !== []) {
+                $data['forms']['basic-form']['fields']['layout']['value'] = $layoutOptions[0]['value'];
+            }
+        }
+
+        if ($record !== null && isset($data['forms']['basic-form']['fields']['url'])) {
+            $url = $record->url ?? '';
+
+            if (is_string($url) && $url === '') {
+                $data['forms']['basic-form']['fields']['url']['value'] = '/';
+            }
+        }
+
         $data['blocksCatalog'] = $catalog;
+        $data['layoutsCatalog'] = $layouts;
 
         return $data;
     }
@@ -60,7 +95,7 @@ class PagesController extends ThemeFileResourceController
         $currentSlug = $currentSlug instanceof ThemeFileRecord ? $currentSlug->slug : $currentSlug;
 
         $rules['url'][] = function (string $attribute, mixed $value, Closure $fail) use ($currentSlug): void {
-            if (! is_string($value) || $value === '') {
+            if (! is_string($value)) {
                 return;
             }
 
@@ -71,6 +106,7 @@ class PagesController extends ThemeFileResourceController
             }
         };
         $rules['sections'] = ['nullable', 'array', $this->sectionsStructureRule()];
+        $rules['layout'][] = $this->layoutExistsRule();
 
         $validated = $request->validate($rules);
 
@@ -78,9 +114,66 @@ class PagesController extends ThemeFileResourceController
             $validated['url'] = strtolower(trim($validated['url'], '/'));
         }
 
-        $validated['sections'] = $this->normalizeSections($validated['sections'] ?? []);
+        $sections = is_array($validated['sections'] ?? null) ? $validated['sections'] : [];
+        $blocksBySlug = $this->blocks->all($this->activeThemeSlug())
+            ->keyBy(fn (ThemeFileRecord $block) => $block->slug);
+
+        $processor = new MediaParameterProcessor;
+        $sections = $processor->processSections(
+            $sections,
+            $request,
+            function (string $blockSlug) use ($blocksBySlug): array {
+                $block = $blocksBySlug->get($blockSlug);
+
+                if ($block === null) {
+                    return [];
+                }
+
+                $parameters = $block->code['parameters'] ?? [];
+
+                return is_array($parameters) ? $parameters : [];
+            }
+        );
+
+        $validated['sections'] = $this->normalizeSections($sections);
 
         return FormSchema::mapValidatedToModel($validated, $formDefinitions, $this->pluginId());
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    protected function layoutsCatalog(): array
+    {
+        return $this->layouts->all($this->activeThemeSlug())
+            ->sortBy('name')
+            ->map(fn (ThemeFileRecord $layout) => [
+                'slug' => $layout->slug,
+                'name' => $layout->name,
+            ])
+            ->values()
+            ->all();
+    }
+
+    protected function layoutExistsRule(): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail): void {
+            $layouts = $this->layouts->all($this->activeThemeSlug());
+
+            if ($layouts->isEmpty()) {
+                $fail('Create at least one layout for this theme before adding pages.');
+
+                return;
+            }
+
+            if (! is_string($value) || $value === '') {
+                return;
+            }
+
+            if ($layouts->first(fn (ThemeFileRecord $layout) => $layout->slug === $value) === null) {
+                $fail('The selected layout does not exist for this theme.');
+            }
+        };
     }
 
     /**
@@ -214,6 +307,22 @@ class PagesController extends ThemeFileResourceController
                                     continue;
                                 }
 
+                                if (MediaParameterProcessor::isMediaType($fieldType)) {
+                                    if (! MediaParameterProcessor::validateCompoundValue($fieldValue, $name.'.'.$fieldName, $fail)) {
+                                        return;
+                                    }
+
+                                    continue;
+                                }
+
+                                if (UrlParameterProcessor::isUrlType($fieldType)) {
+                                    if (! UrlParameterProcessor::validateCompoundValue($fieldValue, $name.'.'.$fieldName, $fail)) {
+                                        return;
+                                    }
+
+                                    continue;
+                                }
+
                                 if ($fieldValue === null || $fieldValue === '') {
                                     continue;
                                 }
@@ -236,6 +345,22 @@ class PagesController extends ThemeFileResourceController
                     }
 
                     if ($type === 'checkbox') {
+                        continue;
+                    }
+
+                    if (MediaParameterProcessor::isMediaType($type)) {
+                        if (! MediaParameterProcessor::validateCompoundValue($paramValue, $name, $fail)) {
+                            return;
+                        }
+
+                        continue;
+                    }
+
+                    if (UrlParameterProcessor::isUrlType($type)) {
+                        if (! UrlParameterProcessor::validateCompoundValue($paramValue, $name, $fail)) {
+                            return;
+                        }
+
                         continue;
                     }
 

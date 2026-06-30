@@ -13,6 +13,7 @@
     $disabled = $disabled ?? false;
     $readonly = $readonly ?? false;
     $attributes = $attributes ?? [];
+    $inputGroupPrefix = $inputGroupPrefix ?? null;
 @endphp
 
 @if ($type === 'hidden')
@@ -25,10 +26,21 @@
     @component('admin.fields.partials._wrapper', compact(
         'name', 'label', 'id', 'wrapperClass', 'labelClass', 'required', 'help'
     ))
-        <input
-            type="{{ $type }}"
-            value="{{ $value }}"
-            @include('admin.fields.partials._attributes')
-        >
+        @if ($inputGroupPrefix !== null && $inputGroupPrefix !== '')
+            <div class="input-group">
+                <span class="input-group-text">{{ $inputGroupPrefix }}</span>
+                <input
+                    type="{{ $type }}"
+                    value="{{ $value }}"
+                    @include('admin.fields.partials._attributes')
+                >
+            </div>
+        @else
+            <input
+                type="{{ $type }}"
+                value="{{ $value }}"
+                @include('admin.fields.partials._attributes')
+            >
+        @endif
     @endcomponent
 @endif

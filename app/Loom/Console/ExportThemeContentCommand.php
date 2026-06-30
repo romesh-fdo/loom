@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Loom\Builder\TableNames;
 use Loom\Support\ThemeContent\BlockStore;
+use Loom\Support\ThemeContent\PageStore;
 use Loom\Support\ThemeManager;
 
 class ExportThemeContentCommand extends Command
@@ -113,13 +114,20 @@ class ExportThemeContentCommand extends Command
 
                 $payload = [
                     'name' => (string) $row->name,
+                    'slug' => $slug,
                     'url' => $url,
                     'sections' => $normalizedSections,
                     'updated_at' => $row->updated_at ?? now()->toIso8601String(),
                 ];
 
+                $pageDir = $dir.'/'.$slug;
+
+                if (! is_dir($pageDir)) {
+                    File::makeDirectory($pageDir, 0755, true);
+                }
+
                 File::put(
-                    $dir.'/'.$slug.'.json',
+                    $pageDir.'/'.PageStore::PAGE_JSON_FILENAME,
                     json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES).PHP_EOL
                 );
 

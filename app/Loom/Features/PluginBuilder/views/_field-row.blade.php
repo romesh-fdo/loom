@@ -74,18 +74,28 @@
                 </select>
             </div>
             <div class="col-md-3 text-end">
-                <button type="button" class="btn btn-sm btn-outline-danger" data-plugin-builder-remove-field>
-                    <i class="bi bi-trash"></i> Remove
-                </button>
+                @include('admin.partials.action-submit', [
+                    'icon' => 'bi-trash',
+                    'label' => 'Remove',
+                    'variant' => 'danger',
+                    'type' => 'button',
+                    'extraClass' => 'admin-action-submit--compact',
+                    'attributes' => ['data-plugin-builder-remove-field' => ''],
+                ])
             </div>
         </div>
 
         <div class="mt-3" data-plugin-builder-validation-rules>
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <label class="form-label small mb-0">Validation rules</label>
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-plugin-builder-add-validation-rule>
-                    <i class="bi bi-plus-lg"></i> Add rule
-                </button>
+                @include('admin.partials.action-submit', [
+                    'icon' => 'bi-plus-lg',
+                    'label' => 'Add rule',
+                    'variant' => 'secondary',
+                    'type' => 'button',
+                    'extraClass' => 'admin-action-submit--compact',
+                    'attributes' => ['data-plugin-builder-add-validation-rule' => ''],
+                ])
             </div>
 
             <div data-plugin-builder-validation-rules-list>
@@ -106,9 +116,14 @@
                                    placeholder="Custom message (optional)">
                         </div>
                         <div class="col-md-1 text-end">
-                            <button type="button" class="btn btn-sm btn-outline-danger" data-plugin-builder-remove-validation-rule>
-                                <i class="bi bi-x-lg"></i>
-                            </button>
+                            @include('admin.partials.action-submit', [
+                                'icon' => 'bi-x-lg',
+                                'label' => 'Remove',
+                                'variant' => 'danger',
+                                'type' => 'button',
+                                'extraClass' => 'admin-action-submit--compact',
+                                'attributes' => ['data-plugin-builder-remove-validation-rule' => ''],
+                            ])
                         </div>
                     </div>
                 @endforeach

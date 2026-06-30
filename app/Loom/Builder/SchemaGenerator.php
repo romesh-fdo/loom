@@ -105,7 +105,7 @@ class SchemaGenerator
                 'data-language' => 'html',
                 'spellcheck' => 'false',
             ];
-            $definition['help'] = 'HTML template. Highlight text, right-click, and choose Make dynamic.';
+            $definition['help'] = 'HTML template. Highlight text, right-click, and choose Make dynamic text, Media selector, or Media attach.';
         }
 
         if (! empty($field['placeholder'])) {

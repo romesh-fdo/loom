@@ -1,0 +1,30 @@
+{
+    "name": "Test Page",
+    "slug": "home",
+    "url": "",
+    "layout": "custom",
+    "sections": [
+        {
+            "block_slug": "hero",
+            "values": {
+                "hero_header": "Hello",
+                "hero_main_text": "FOOD",
+                "intro_text": "<p>Delicious Fast Food</p><p>for Every Moment</p>",
+                "intro_paragraph": "Experience bold flavors crafted from premium ingredients. From crispy burgers to gourmet pizzas - every bite is an adventure worth savoring.",
+                "youtube_link": {
+                    "url": "https://www.youtube.com/watch?v=RXv_uIN6e-Y",
+                    "class": "magnific_popup btn-play popup-youtube",
+                    "id": "",
+                    "target": ""
+                },
+                "story_text": "Watch Our Story",
+                "hero_image": {
+                    "url": "http://loom.test/media/Leaflet 2.png",
+                    "alt": "",
+                    "class": ""
+                }
+            }
+        }
+    ],
+    "updated_at": "2026-06-30T17:10:04+00:00"
+}

@@ -27,7 +27,7 @@ class Feature extends FeatureBase
                 'url' => route('loom.blocks.index'),
                 'route' => 'loom.blocks.*',
                 'icon' => 'bi-bricks',
-                'order' => 100,
+                'order' => 110,
                 'parent' => [
                     'label' => 'Content',
                     'icon' => 'bi-file-earmark-text-fill',

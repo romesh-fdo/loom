@@ -7,9 +7,12 @@
     <div class="admin-panel">
         <div class="admin-panel-header">
             <h2>Plugins</h2>
-            <a href="{{ route('loom.plugin-builder.create') }}" class="btn btn-sm btn-primary">
-                <i class="bi bi-plus-lg"></i> New plugin
-            </a>
+            @include('admin.partials.action-link', [
+                'href' => route('loom.plugin-builder.create'),
+                'icon' => 'bi-plus-lg',
+                'label' => 'New plugin',
+                'variant' => 'primary',
+            ])
         </div>
         <div class="admin-panel-body p-4">
             <div class="row g-3">

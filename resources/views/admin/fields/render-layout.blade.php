@@ -1,7 +1,7 @@
 @php
     $allowedTypes = [
-        'text', 'email', 'password', 'number', 'textarea', 'select',
-        'checkbox', 'radio', 'date', 'datetime-local', 'file', 'hidden', 'code', 'dynamic_code', 'color', 'repeater', 'block_repeater',
+        'text', 'email', 'url', 'password', 'number', 'textarea', 'select',
+        'checkbox', 'radio', 'date', 'datetime-local', 'file', 'media_finder', 'hidden', 'code', 'dynamic_code', 'color', 'repeater', 'block_repeater',
     ];
     $namePrefix = $namePrefix ?? null;
     $fieldValues = $fieldValues ?? [];
@@ -56,6 +56,7 @@
                     'addLabel' => $field['addLabel'] ?? null,
                     'itemLabel' => $field['itemLabel'] ?? null,
                     'blocksCatalog' => $field['blocksCatalog'] ?? ($blocksCatalog ?? []),
+                    'inputGroupPrefix' => $field['inputGroupPrefix'] ?? null,
                 ] : null;
             @endphp
 

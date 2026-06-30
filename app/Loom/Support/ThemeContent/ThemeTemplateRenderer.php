@@ -9,28 +9,51 @@ class ThemeTemplateRenderer
      *
      * @param  list<array<string, mixed>>  $parameters
      */
-    public static function render(string $template, array $values, string $prefix = 'blockData', array $parameters = []): string
-    {
+    public static function render(
+        string $template,
+        array $values,
+        string $prefix = 'blockData',
+        array $parameters = [],
+        ?ThemeRenderContext $context = null,
+    ): string {
         $rawFields = self::rawFieldNames($parameters);
         $template = self::renderLoops($template, $values, $prefix);
+        $template = self::renderScalars($template, $values, $prefix, $rawFields);
 
-        return self::renderScalars($template, $values, $prefix, $rawFields);
+        return self::renderAssets($template, $context);
     }
 
     /**
      * @param  list<array<string, mixed>>  $parameters
      */
-    public static function renderBlock(string $template, array $values, array $parameters = []): string
-    {
-        return self::render($template, $values, 'blockData', $parameters);
+    public static function renderBlock(
+        string $template,
+        array $values,
+        array $parameters = [],
+        ?ThemeRenderContext $context = null,
+    ): string {
+        return self::render($template, $values, 'blockData', $parameters, $context);
     }
 
     /**
      * @param  list<array<string, mixed>>  $parameters
      */
-    public static function renderSegment(string $template, array $values, array $parameters = []): string
+    public static function renderSegment(
+        string $template,
+        array $values,
+        array $parameters = [],
+        ?ThemeRenderContext $context = null,
+    ): string {
+        return self::render($template, $values, 'segmentData', $parameters, $context);
+    }
+
+    private static function renderAssets(string $template, ?ThemeRenderContext $context): string
     {
-        return self::render($template, $values, 'segmentData', $parameters);
+        if ($context === null) {
+            return $template;
+        }
+
+        return (new ThemeAssetsDirective)->render($template, $context);
     }
 
     /**
@@ -115,6 +138,24 @@ class ThemeTemplateRenderer
      */
     private static function renderItemPlaceholders(string $template, array $row, string $itemName): string
     {
+        $nestedPattern = '/\{\{\s*\$'.preg_quote($itemName, '/').'\[[\'"]([^\'"]+)[\'"]\]\[[\'"]([^\'"]+)[\'"]\]\s*\}\}/';
+
+        $template = preg_replace_callback(
+            $nestedPattern,
+            static function (array $matches) use ($row): string {
+                $field = $matches[1];
+                $subKey = $matches[2];
+                $value = $row[$field] ?? null;
+
+                if (is_array($value)) {
+                    return self::formatScalarValue($value[$subKey] ?? '');
+                }
+
+                return self::formatScalarValue($subKey === 'url' ? $value : '');
+            },
+            $template
+        ) ?? $template;
+
         $pattern = '/\{\{\s*\$'.preg_quote($itemName, '/').'\[[\'"]([^\'"]+)[\'"]\]\s*\}\}/';
 
         return preg_replace_callback(
@@ -132,6 +173,24 @@ class ThemeTemplateRenderer
      */
     private static function renderScalars(string $template, array $values, string $prefix, array $rawFields = []): string
     {
+        $nestedBracketPattern = '/\{\{\s*\$'.preg_quote($prefix, '/').'\[[\'"]([^\'"]+)[\'"]\]\[[\'"]([^\'"]+)[\'"]\]\s*\}\}/';
+
+        $template = preg_replace_callback(
+            $nestedBracketPattern,
+            static function (array $matches) use ($values): string {
+                $key = $matches[1];
+                $subKey = $matches[2];
+                $value = $values[$key] ?? null;
+
+                if (is_array($value)) {
+                    return self::formatScalarValue($value[$subKey] ?? '');
+                }
+
+                return self::formatScalarValue($subKey === 'url' ? $value : '');
+            },
+            $template
+        ) ?? $template;
+
         $bracketPattern = '/\{\{\s*\$'.preg_quote($prefix, '/').'\[[\'"]([^\'"]+)[\'"]\]\s*\}\}/';
 
         $template = preg_replace_callback(
@@ -163,9 +222,6 @@ class ThemeTemplateRenderer
         ) ?? $template;
     }
 
-    /**
-     * @param  mixed  $value
-     */
     private static function formatScalarValue(mixed $value, bool $raw = false): string
     {
         if (is_bool($value)) {

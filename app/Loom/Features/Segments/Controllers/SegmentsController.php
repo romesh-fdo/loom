@@ -2,12 +2,15 @@
 
 namespace Loom\Features\Segments\Controllers;
 
-use Closure;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use InvalidArgumentException;
 use Loom\Http\Controllers\Concerns\ValidatesDynamicCode;
 use Loom\Http\Controllers\ThemeFileResourceController;
 use Loom\Support\FormSchema;
+use Loom\Support\ThemeContent\SegmentPath;
 use Loom\Support\ThemeContent\SegmentStore;
 use Loom\Support\ThemeContent\ThemeFileRecord;
 use Loom\Support\ThemeContent\ThemeFileStore;
@@ -22,52 +25,173 @@ class SegmentsController extends ThemeFileResourceController
 
     public function index(Request $request): View
     {
-        $search = $request->string('q')->trim();
-        $perPage = (int) ($this->module()->getConfig('per_page', 24) ?? 24);
-        $theme = $this->activeTheme();
-        $slotLabels = $this->slotLabels($theme);
-
-        $segments = $this->segments->paginate(
-            $search->isNotEmpty() ? $search->toString() : null,
-            $perPage,
-            max(1, (int) $request->input('page', 1)),
-            $this->activeThemeSlug()
-        );
-
         return view('loom-segments::index', [
-            'segments' => $segments,
-            'search' => $search->toString(),
-            'slotLabels' => $slotLabels,
+            'initialSegment' => $request->string('segment')->toString(),
+            'initialCreate' => $request->boolean('create'),
+            'initialFolder' => SegmentPath::normalize($request->string('folder')->toString()),
+        ]);
+    }
+
+    public function tree(): JsonResponse
+    {
+        return response()->json([
+            'tree' => $this->segments->tree($this->activeThemeSlug()),
+        ]);
+    }
+
+    public function formCreate(Request $request): View
+    {
+        $folder = SegmentPath::normalize($request->string('folder')->toString());
+
+        if ($folder !== '') {
+            SegmentPath::validate($folder);
+        }
+
+        return view('loom-segments::_form-panel', array_merge(
+            $this->formViewData(),
+            [
+                'folder' => $folder,
+                'panelMode' => true,
+            ]
+        ));
+    }
+
+    public function formEdit(Request $request): View
+    {
+        $record = $this->resolveRouteRecord($request);
+
+        return view('loom-segments::_form-panel', array_merge(
+            [$this->viewRecordKey() => $record],
+            $this->formViewData($record),
+            ['panelMode' => true]
+        ));
+    }
+
+    public function redirectCreate(): RedirectResponse
+    {
+        return redirect()->route($this->indexRoute(), array_filter([
+            'create' => 1,
+            'folder' => request()->string('folder')->toString() ?: null,
+        ]));
+    }
+
+    public function redirectEdit(Request $request): RedirectResponse
+    {
+        return redirect()->route($this->indexRoute(), [
+            'segment' => $this->routeSlug($request),
+        ]);
+    }
+
+    public function storeFolder(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'path' => ['required', 'string', 'max:255'],
+        ]);
+
+        try {
+            $path = SegmentPath::normalize($validated['path']);
+            $this->segments->createFolder($path, $this->activeThemeSlug());
+        } catch (InvalidArgumentException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 422);
+        }
+
+        return response()->json([
+            'message' => 'Folder created.',
+            'path' => $path,
+        ]);
+    }
+
+    public function updateFolder(Request $request, string $folderPath): JsonResponse
+    {
+        $validated = $request->validate([
+            'path' => ['required', 'string', 'max:255'],
+        ]);
+
+        try {
+            $from = SegmentPath::normalize($folderPath);
+            $to = SegmentPath::normalize($validated['path']);
+            $this->segments->renameFolder($from, $to, $this->activeThemeSlug());
+        } catch (InvalidArgumentException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 422);
+        }
+
+        return response()->json([
+            'message' => 'Folder renamed.',
+            'path' => $to,
+        ]);
+    }
+
+    public function destroyFolder(string $folderPath): JsonResponse
+    {
+        try {
+            $path = SegmentPath::normalize($folderPath);
+            $this->segments->deleteFolder($path, $this->activeThemeSlug());
+        } catch (InvalidArgumentException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 422);
+        }
+
+        return response()->json(['message' => 'Folder deleted.']);
+    }
+
+    public function panelDestroy(Request $request, string $segmentSlug): JsonResponse
+    {
+        $this->segments->delete($segmentSlug, $this->activeThemeSlug());
+
+        return response()->json(['message' => $this->flashMessage('deleted')]);
+    }
+
+    public function panelMove(Request $request, string $segmentSlug): JsonResponse
+    {
+        $validated = $request->validate([
+            'path' => ['required', 'string', 'max:255'],
+            'name' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        try {
+            $from = SegmentPath::normalize($segmentSlug);
+            $to = SegmentPath::normalize($validated['path']);
+            $name = isset($validated['name']) && is_string($validated['name']) ? trim($validated['name']) : null;
+            $this->segments->moveSegment($from, $to, $this->activeThemeSlug(), $name !== '' ? $name : null);
+        } catch (InvalidArgumentException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 422);
+        }
+
+        return response()->json([
+            'message' => SegmentPath::dirname($from) === SegmentPath::dirname($to)
+                ? 'Segment renamed.'
+                : 'Segment moved.',
+            'slug' => $to,
         ]);
     }
 
     protected function formViewData(?ThemeFileRecord $record = null): array
     {
         $data = parent::formViewData($record);
-        $theme = $this->activeTheme();
-        $slots = $this->slotOptions($theme);
 
-        if (isset($data['forms']['basic-form']['fields']['slot'])) {
-            $data['forms']['basic-form']['fields']['slot']['options'] = $slots;
+        if ($record === null) {
+            $data['segmentCreateDefaults'] = [
+                'code' => json_encode([
+                    'template' => '<div></div>',
+                    'parameters' => [],
+                ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ];
         }
-
-        $parameters = [];
-        $values = [];
-
-        if ($record !== null) {
-            $code = $record->code ?? [];
-            $parameters = is_array($code['parameters'] ?? null) ? $code['parameters'] : [];
-            $values = is_array($record->values ?? null) ? $record->values : [];
-        }
-
-        $data['segmentParameters'] = $parameters;
-        $data['segmentValues'] = $values;
 
         return $data;
     }
 
     protected function validateRecord(Request $request): array
     {
+        if ($request->route('segmentSlug') === null && is_string($request->input('code'))) {
+            $decoded = json_decode($request->input('code'), true);
+
+            if (is_array($decoded) && trim((string) ($decoded['template'] ?? '')) === '') {
+                $decoded['template'] = '<div></div>';
+                $decoded['parameters'] = is_array($decoded['parameters'] ?? null) ? $decoded['parameters'] : [];
+                $request->merge(['code' => json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]);
+            }
+        }
+
         $formDefinitions = $this->sortedFormDefinitions();
         $rules = FormSchema::validationRulesForDefinitions($this->pluginId(), $formDefinitions);
 
@@ -76,29 +200,8 @@ class SegmentsController extends ThemeFileResourceController
             'json',
             $this->dynamicCodeStructureRule(),
         ];
-        $rules['values'] = ['nullable', 'array'];
         $rules['enabled'] = ['nullable', 'boolean'];
-
-        $currentSlug = $request->route('segmentSlug');
-        $currentSlug = $currentSlug instanceof ThemeFileRecord ? $currentSlug->slug : $currentSlug;
-
-        $rules['slot'][] = function (string $attribute, mixed $value, Closure $fail) use ($currentSlug): void {
-            if (! is_string($value) || $value === '') {
-                return;
-            }
-
-            $allowed = array_keys($this->slotOptions($this->activeTheme()));
-
-            if ($allowed !== [] && ! in_array($value, $allowed, true)) {
-                $fail('The selected slot is not valid for this theme.');
-
-                return;
-            }
-
-            if ($this->segments->slotExists($value, is_string($currentSlug) ? $currentSlug : null, $this->activeThemeSlug())) {
-                $fail('A segment already exists for this slot.');
-            }
-        };
+        $rules['folder'] = ['nullable', 'string', 'max:255'];
 
         $validated = $request->validate($rules);
 
@@ -106,48 +209,40 @@ class SegmentsController extends ThemeFileResourceController
             $validated['code'] = json_decode($validated['code'], true);
         }
 
+        $currentSlug = $request->route('segmentSlug');
+        $currentSlug = $currentSlug instanceof ThemeFileRecord ? $currentSlug->slug : $currentSlug;
+
         $validated['enabled'] = $request->boolean('enabled', $currentSlug === null);
-        $values = is_array($validated['values'] ?? null) ? $validated['values'] : [];
 
         $mapped = FormSchema::mapValidatedToModel($validated, $formDefinitions, $this->pluginId());
-        $mapped['values'] = $values;
+
+        if (isset($validated['folder']) && is_string($validated['folder']) && $validated['folder'] !== '') {
+            $mapped['folder'] = SegmentPath::normalize($validated['folder']);
+        }
 
         return $mapped;
     }
 
-    /**
-     * @param  array<string, mixed>|null  $theme
-     * @return array<string, string>
-     */
-    protected function slotOptions(?array $theme): array
+    protected function savedResponse(Request $request, string $action, mixed $record = null): JsonResponse|RedirectResponse
     {
-        $slots = $theme['segment_slots'] ?? [];
+        if ($this->isPanelRequest($request)) {
+            $payload = [
+                'message' => $this->flashMessage($action),
+            ];
 
-        if (! is_array($slots)) {
-            return [];
-        }
-
-        $options = [];
-
-        foreach ($slots as $key => $meta) {
-            if (! is_string($key)) {
-                continue;
+            if ($record !== null) {
+                $payload['slug'] = $this->recordRouteParameter($record);
             }
 
-            $label = is_array($meta) ? ($meta['label'] ?? $key) : (string) $meta;
-            $options[$key] = $label;
+            return response()->json($payload);
         }
 
-        return $options;
+        return parent::savedResponse($request, $action, $record);
     }
 
-    /**
-     * @param  array<string, mixed>|null  $theme
-     * @return array<string, string>
-     */
-    protected function slotLabels(?array $theme): array
+    protected function isPanelRequest(Request $request): bool
     {
-        return $this->slotOptions($theme);
+        return $request->wantsJson() || $request->header('X-Segments-Panel') === '1';
     }
 
     protected function pluginId(): string

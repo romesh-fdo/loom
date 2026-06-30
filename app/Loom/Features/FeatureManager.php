@@ -5,6 +5,7 @@ namespace Loom\Features;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
+use Loom\Features\PluginBuilder\Feature;
 use Loom\System\PluginManager;
 
 class FeatureManager
@@ -22,13 +23,14 @@ class FeatureManager
     protected function featureMap(): array
     {
         return [
-            \Loom\Features\PluginBuilder\Feature::class => 'loom.plugin-builder',
-            \Loom\Features\Blocks\Feature::class => 'loom.blocks',
-            \Loom\Features\Pages\Feature::class => 'loom.pages',
-            \Loom\Features\Segments\Feature::class => 'loom.segments',
-            \Loom\Features\Media\Feature::class => 'loom.media',
-            \Loom\Features\Assets\Feature::class => 'loom.assets',
-            \Loom\Features\Theme\Feature::class => 'loom.theme',
+            Feature::class => 'loom.plugin-builder',
+            Blocks\Feature::class => 'loom.blocks',
+            Layouts\Feature::class => 'loom.layouts',
+            Pages\Feature::class => 'loom.pages',
+            Segments\Feature::class => 'loom.segments',
+            Media\Feature::class => 'loom.media',
+            Assets\Feature::class => 'loom.assets',
+            Theme\Feature::class => 'loom.theme',
         ];
     }
 

@@ -1,0 +1,69 @@
+{
+    "form": {
+        "id": "loom-layout-form",
+        "class": "loom-layout-form",
+        "method": "POST",
+        "enctype": "multipart/form-data",
+        "attributes": {
+            "data-loom-form": "layouts-basic",
+            "novalidate": false
+        }
+    },
+    "layout": [
+        {
+            "section": "layout",
+            "rowClass": "row g-3 mb-3",
+            "fields": [
+                { "name": "name", "colClass": "col-md-6" }
+            ]
+        },
+        {
+            "section": "layout",
+            "rowClass": "row g-3 mb-3",
+            "fields": [
+                { "name": "code", "colClass": "col-12" }
+            ]
+        }
+    ],
+    "fields": {
+        "name": {
+            "section": "layout",
+            "type": "text",
+            "label": "Layout name",
+            "id": "field-name",
+            "class": "form-control",
+            "wrapperClass": "mb-0",
+            "colClass": "col-md-6",
+            "labelClass": "form-label",
+            "placeholder": "e.g. Default page layout",
+            "help": "A unique, human-readable name for this layout",
+            "required": true,
+            "disabled": false,
+            "readonly": false,
+            "attributes": {
+                "autocomplete": "off",
+                "maxlength": "255"
+            },
+            "validation": ["required", "string", "max:255"]
+        },
+        "code": {
+            "section": "layout",
+            "type": "code",
+            "label": "HTML",
+            "id": "field-code",
+            "class": "form-control d-none",
+            "wrapperClass": "mb-0",
+            "colClass": "col-12",
+            "labelClass": "form-label",
+            "help": "HTML markup for this layout. Use {{ $content }} where page content should be rendered. Drag segments from the right panel into the editor to insert @segment('path', ['param' => 'value']) placeholders.",
+            "required": true,
+            "disabled": false,
+            "readonly": false,
+            "attributes": {
+                "data-language": "html",
+                "spellcheck": "false"
+            },
+            "validation": ["required", "string"]
+        }
+    }
+}

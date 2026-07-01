@@ -32,9 +32,13 @@
 
             <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3">
                 @forelse ($pages as $page)
+                    @php
+                        $pageName = trim((string) ($page->name ?? ''));
+                        $pageTitle = $pageName !== '' ? $pageName : (string) ($page->slug ?? 'Untitled');
+                    @endphp
                     <div class="col">
                         <div class="stat-card stat-card-compact h-100">
-                            <p class="stat-card-label mb-1">{{ $page->name }}</p>
+                            <p class="fw-semibold text-body mb-1">{{ $pageTitle }}</p>
                             <p class="text-muted small mb-1">{{ ($page->url ?? '') === '' ? '/' : '/'.$page->url }}</p>
                             @php
                                 $layoutSlug = (string) ($page->layout ?? '');
@@ -45,15 +49,21 @@
                             @else
                                 <p class="text-muted small mb-3">Layout: <span class="text-warning">Not set</span></p>
                             @endif
+                            @php
+                                $pageUrl = (string) ($page->url ?? '');
+                                $isPatternUrl = \Loom\Support\ThemeContent\PageUrlPattern::isPattern($pageUrl);
+                            @endphp
                             <div class="admin-action-group">
-                                @include('admin.partials.action-link', [
-                                    'href' => url('/'.ltrim((string) $page->url, '/')),
-                                    'icon' => 'bi-box-arrow-up-right',
-                                    'label' => 'View',
-                                    'variant' => 'primary',
-                                    'target' => '_blank',
-                                    'rel' => 'noopener noreferrer',
-                                ])
+                                @unless ($isPatternUrl)
+                                    @include('admin.partials.action-link', [
+                                        'href' => url('/'.ltrim($pageUrl, '/')),
+                                        'icon' => 'bi-box-arrow-up-right',
+                                        'label' => 'View',
+                                        'variant' => 'primary',
+                                        'target' => '_blank',
+                                        'rel' => 'noopener noreferrer',
+                                    ])
+                                @endunless
                                 @include('admin.partials.action-link', [
                                     'href' => route('loom.pages.edit', $page->slug),
                                     'icon' => 'bi-pencil',

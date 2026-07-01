@@ -1,0 +1,8 @@
+name: asdasd
+description: Manage asdasd for Loom CMS
+author: Loom
+icon: bi-box
+version: 1.0.0
+route: asdasd
+model: Asdasd
+table: loom_asdasds

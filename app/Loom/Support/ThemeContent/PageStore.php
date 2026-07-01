@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
-class PageStore extends ThemeFileStore
+class PageStore extends ThemeBladeStore
 {
     public const PAGE_JSON_FILENAME = 'page.json';
 
@@ -24,14 +24,9 @@ class PageStore extends ThemeFileStore
         return $this->dirForTheme($themeSlug).'/'.$slug;
     }
 
-    protected function filePath(string $slug, ?string $themeSlug = null): string
+    protected function legacyPageJsonPath(string $slug, ?string $themeSlug = null): string
     {
         return $this->pageDirPath($slug, $themeSlug).'/'.self::PAGE_JSON_FILENAME;
-    }
-
-    protected function legacyFilePath(string $slug, ?string $themeSlug = null): string
-    {
-        return $this->dirForTheme($themeSlug).'/'.$slug.'.json';
     }
 
     public function urlExists(string $url, ?string $ignoreSlug = null, ?string $themeSlug = null): bool
@@ -47,21 +42,65 @@ class PageStore extends ThemeFileStore
                 ? $this->normalizePageUrl($record->url)
                 : '';
 
-            return $pageUrl === $normalized;
+            if ($pageUrl === $normalized) {
+                return true;
+            }
+
+            if (PageUrlPattern::isPattern($pageUrl) || PageUrlPattern::isPattern($normalized)) {
+                return PageUrlPattern::templateKey($pageUrl) === PageUrlPattern::templateKey($normalized);
+            }
+
+            return false;
         });
     }
 
     public function findByUrl(string $url, ?string $themeSlug = null): ?ThemeFileRecord
     {
-        $normalized = $this->normalizePageUrl($url);
+        return $this->matchPath($url, $themeSlug)?->page;
+    }
 
-        return $this->all($themeSlug)->first(function (ThemeFileRecord $record) use ($normalized) {
+    public function matchPath(string $path, ?string $themeSlug = null): ?PagePathMatch
+    {
+        $normalized = $this->normalizePageUrl($path);
+        $pages = $this->all($themeSlug);
+
+        foreach ($pages as $record) {
             $pageUrl = isset($record->url) && is_string($record->url)
                 ? $this->normalizePageUrl($record->url)
                 : '';
 
-            return $pageUrl === $normalized;
-        });
+            if ($pageUrl === $normalized && ! PageUrlPattern::isPattern($pageUrl)) {
+                return new PagePathMatch($record, []);
+            }
+        }
+
+        $bestMatch = null;
+        $bestScore = -1;
+
+        foreach ($pages as $record) {
+            $pageUrl = isset($record->url) && is_string($record->url)
+                ? $this->normalizePageUrl($record->url)
+                : '';
+
+            if (! PageUrlPattern::isPattern($pageUrl)) {
+                continue;
+            }
+
+            $params = PageUrlPattern::match($pageUrl, $normalized);
+
+            if ($params === null) {
+                continue;
+            }
+
+            $score = (PageUrlPattern::staticSegmentCount($pageUrl) * 1000) + strlen($pageUrl);
+
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $bestMatch = new PagePathMatch($record, $params);
+            }
+        }
+
+        return $bestMatch;
     }
 
     /**
@@ -69,55 +108,44 @@ class PageStore extends ThemeFileStore
      */
     public function all(?string $themeSlug = null): Collection
     {
+        $records = parent::all($themeSlug);
+        $seen = $records->mapWithKeys(fn (ThemeFileRecord $record) => [$record->slug => true])->all();
         $dir = $this->dirForTheme($themeSlug);
 
         if (! is_dir($dir)) {
-            return collect();
+            return $records;
         }
-
-        $records = [];
-        $seen = [];
 
         foreach (glob($dir.'/*/'.self::PAGE_JSON_FILENAME) ?: [] as $path) {
             $slug = basename(dirname($path));
-            $record = $this->readFile($path, $slug);
-
-            if ($record !== null) {
-                $records[] = $record;
-                $seen[$slug] = true;
-            }
-        }
-
-        foreach (glob($dir.'/*.json') ?: [] as $path) {
-            $slug = basename($path, '.json');
 
             if (isset($seen[$slug])) {
                 continue;
             }
 
-            $record = $this->readLegacyFile($path, $slug, $themeSlug);
+            $record = $this->readLegacyPageJsonFile($path, $slug, $themeSlug);
 
             if ($record !== null) {
-                $records[] = $record;
+                $records->push($record);
                 $seen[$slug] = true;
             }
         }
 
-        return collect($records)->sortByDesc(fn (ThemeFileRecord $record) => $record->updatedAt()->timestamp)->values();
+        return $records->sortByDesc(fn (ThemeFileRecord $record) => $record->updatedAt()->timestamp)->values();
     }
 
     public function find(string $slug, ?string $themeSlug = null): ?ThemeFileRecord
     {
-        $path = $this->filePath($slug, $themeSlug);
+        $record = parent::find($slug, $themeSlug);
 
-        if (file_exists($path)) {
-            return $this->readFile($path, $slug);
+        if ($record !== null) {
+            return $record;
         }
 
-        $legacyPath = $this->legacyFilePath($slug, $themeSlug);
+        $legacyPageJson = $this->legacyPageJsonPath($slug, $themeSlug);
 
-        if (file_exists($legacyPath)) {
-            return $this->readLegacyFile($legacyPath, $slug, $themeSlug);
+        if (file_exists($legacyPageJson)) {
+            return $this->readLegacyPageJsonFile($legacyPageJson, $slug, $themeSlug);
         }
 
         return null;
@@ -129,8 +157,8 @@ class PageStore extends ThemeFileStore
             return false;
         }
 
-        return file_exists($this->filePath($slug, $themeSlug))
-            || file_exists($this->legacyFilePath($slug, $themeSlug))
+        return parent::slugExists($slug, $themeSlug, $ignoreSlug)
+            || file_exists($this->legacyPageJsonPath($slug, $themeSlug))
             || is_dir($this->pageDirPath($slug, $themeSlug));
     }
 
@@ -167,7 +195,7 @@ class PageStore extends ThemeFileStore
     {
         $themeSlug = $themeSlug ?? $this->themes->activeSlug();
 
-        if (! $this->slugExists($slug, $themeSlug, $slug)) {
+        if ($this->find($slug, $themeSlug) === null) {
             throw new InvalidArgumentException("Record [{$slug}] not found.");
         }
 
@@ -180,17 +208,16 @@ class PageStore extends ThemeFileStore
     protected function resolveSlugForCreate(array $data, string $themeSlug): string
     {
         $url = $this->normalizePageUrl($data['url'] ?? '');
-        $slug = $this->slugFromUrl($url);
 
-        if ($this->slugExists($slug, $themeSlug)) {
-            if ($url === '') {
+        if ($url === '') {
+            if ($this->slugExists(self::HOME_PAGE_SLUG, $themeSlug)) {
                 throw new InvalidArgumentException('A homepage already exists for this theme.');
             }
 
-            throw new InvalidArgumentException("A record with slug [{$slug}] already exists.");
+            return self::HOME_PAGE_SLUG;
         }
 
-        return $slug;
+        return $this->generateSlug((string) ($data['name'] ?? 'page'), $themeSlug);
     }
 
     /**
@@ -198,12 +225,17 @@ class PageStore extends ThemeFileStore
      */
     protected function resolveSlugForUpdate(string $currentSlug, array $data, string $themeSlug): string
     {
-        if (! isset($data['url']) || ! is_string($data['url'])) {
-            return $currentSlug;
-        }
+        $url = $this->normalizePageUrl($data['url'] ?? '');
 
-        $url = $this->normalizePageUrl($data['url']);
-        $slug = $this->slugFromUrl($url);
+        if ($url === '') {
+            $slug = self::HOME_PAGE_SLUG;
+        } else {
+            $slug = Str::slug(trim((string) ($data['name'] ?? '')));
+
+            if ($slug === '') {
+                return $currentSlug;
+            }
+        }
 
         if ($slug !== $currentSlug && $this->slugExists($slug, $themeSlug, $currentSlug)) {
             if ($url === '') {
@@ -228,6 +260,14 @@ class PageStore extends ThemeFileStore
         if (! isset($data['sections']) || ! is_array($data['sections'])) {
             $data['sections'] = [];
         }
+
+        if (! isset($data['layout_fields']) || ! is_array($data['layout_fields'])) {
+            $data['layout_fields'] = [];
+        }
+
+        if (! isset($data['entity_imports']) || ! is_array($data['entity_imports'])) {
+            $data['entity_imports'] = [];
+        }
     }
 
     /**
@@ -242,6 +282,76 @@ class PageStore extends ThemeFileStore
         if (! isset($data['sections']) || ! is_array($data['sections'])) {
             $data['sections'] = [];
         }
+
+        if (! isset($data['layout_fields']) || ! is_array($data['layout_fields'])) {
+            $data['layout_fields'] = [];
+        }
+
+        if (! isset($data['entity_imports']) || ! is_array($data['entity_imports'])) {
+            $data['entity_imports'] = [];
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function buildMeta(array $data): array
+    {
+        return [
+            'name' => (string) ($data['name'] ?? ''),
+            'slug' => (string) ($data['slug'] ?? ''),
+            'url' => isset($data['url']) && is_string($data['url'])
+                ? $this->normalizePageUrl($data['url'])
+                : '',
+            'layout' => (string) ($data['layout'] ?? ''),
+        ];
+    }
+
+    protected function readFile(string $path, string $slug, ?string $themeSlug = null): ?ThemeFileRecord
+    {
+        $parsed = PageBladeDocument::parse((string) file_get_contents($path));
+        $data = $this->metaToRecordData(
+            $slug,
+            $parsed['meta'],
+            $parsed['template'],
+            $parsed['layout_fields'],
+            $parsed['entity_imports']
+        );
+        $data['slug'] = $data['slug'] ?? $slug;
+
+        if (isset($data['updated_at']) && is_string($data['updated_at'])) {
+            $data['updated_at'] = Carbon::parse($data['updated_at']);
+        } else {
+            $data['updated_at'] = Carbon::createFromTimestamp(filemtime($path));
+        }
+
+        return new ThemeFileRecord($slug, $data);
+    }
+
+    /**
+     * @param  array<string, mixed>  $meta
+     * @param  array<string, array<string, mixed>>  $layoutFields
+     * @param  list<array<string, mixed>>  $entityImports
+     * @return array<string, mixed>
+     */
+    protected function metaToRecordData(string $slug, array $meta, string $template, array $layoutFields = [], array $entityImports = []): array
+    {
+        $sections = self::sectionsFromTemplate($template);
+
+        return [
+            'name' => $meta['name'] ?? $slug,
+            'slug' => $meta['slug'] ?? $slug,
+            'url' => isset($meta['url']) && is_string($meta['url'])
+                ? $this->normalizePageUrl($meta['url'])
+                : '',
+            'layout' => (string) ($meta['layout'] ?? ''),
+            'entity_imports' => $entityImports,
+            'layout_fields' => $layoutFields,
+            'sections' => $sections,
+            'code' => ['template' => $template],
+            'updated_at' => $meta['updated_at'] ?? null,
+        ];
     }
 
     /**
@@ -251,69 +361,118 @@ class PageStore extends ThemeFileStore
     {
         $this->ensureDir($themeSlug);
 
-        $pageDir = $this->pageDirPath($slug, $themeSlug);
-
-        if (! is_dir($pageDir)) {
-            File::makeDirectory($pageDir, 0755, true);
-        }
-
-        $payload = $this->normalizePagePayload($data);
+        $sections = is_array($data['sections'] ?? null) ? $data['sections'] : [];
+        $template = self::templateFromSections($sections);
+        $layoutFields = is_array($data['layout_fields'] ?? null) ? $data['layout_fields'] : [];
+        $entityImports = is_array($data['entity_imports'] ?? null) ? array_values($data['entity_imports']) : [];
+        $meta = $this->buildMeta($data);
+        $meta['updated_at'] = ($data['updated_at'] ?? null) instanceof Carbon
+            ? $data['updated_at']->toIso8601String()
+            : (is_string($data['updated_at'] ?? null) ? $data['updated_at'] : now()->toIso8601String());
 
         File::put(
             $this->filePath($slug, $themeSlug),
-            json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES).PHP_EOL
+            PageBladeDocument::compose($meta, $entityImports, $layoutFields, $template)
         );
     }
 
-    protected function readLegacyFile(string $path, string $slug, ?string $themeSlug = null): ?ThemeFileRecord
+    protected function readLegacyPageJsonFile(string $path, string $slug, ?string $themeSlug = null): ?ThemeFileRecord
     {
-        $record = $this->readFile($path, $slug);
+        $data = json_decode((string) file_get_contents($path), true);
 
-        if ($record === null) {
+        if (! is_array($data)) {
             return null;
         }
 
-        $this->write($slug, $record->toArray(), $themeSlug);
-        File::delete($path);
+        $data['slug'] = $slug;
+
+        if (! isset($data['layout_fields']) || ! is_array($data['layout_fields'])) {
+            $data['layout_fields'] = [];
+        }
+
+        if (! isset($data['entity_imports']) || ! is_array($data['entity_imports'])) {
+            $data['entity_imports'] = [];
+        }
+
+        $this->write($slug, $data, $themeSlug);
+        $this->removeLegacyPageDir($slug, $themeSlug);
 
         return $this->find($slug, $themeSlug);
     }
 
     protected function removePageStorage(string $slug, ?string $themeSlug = null): void
     {
-        $pageDir = $this->pageDirPath($slug, $themeSlug);
+        $path = $this->filePath($slug, $themeSlug);
 
-        if (is_dir($pageDir)) {
-            File::deleteDirectory($pageDir);
+        if (file_exists($path)) {
+            File::delete($path);
         }
 
-        $legacyPath = $this->legacyFilePath($slug, $themeSlug);
+        $this->removeLegacyPageDir($slug, $themeSlug);
 
-        if (file_exists($legacyPath)) {
-            File::delete($legacyPath);
+        $legacy = $this->legacyJsonPath($slug, $themeSlug);
+
+        if (file_exists($legacy)) {
+            File::delete($legacy);
+        }
+    }
+
+    protected function removeLegacyPageDir(string $slug, ?string $themeSlug = null): void
+    {
+        $pageDir = $this->pageDirPath($slug, $themeSlug);
+
+        if (! is_dir($pageDir)) {
+            return;
+        }
+
+        $jsonPath = $pageDir.'/'.self::PAGE_JSON_FILENAME;
+
+        if (file_exists($jsonPath)) {
+            File::delete($jsonPath);
+        }
+
+        if (count(scandir($pageDir)) === 2) {
+            File::deleteDirectory($pageDir);
         }
     }
 
     /**
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
+     * @return list<array{block_slug: string, values: array<string, mixed>}>
      */
-    protected function normalizePagePayload(array $data): array
+    public static function sectionsFromTemplate(string $template): array
     {
-        $updatedAt = $data['updated_at'] ?? null;
+        return collect(ThemeDirectiveParser::parseBlockDirectives($template))
+            ->map(fn (array $directive) => [
+                'block_slug' => $directive['blockSlug'],
+                'values' => $directive['values'],
+            ])
+            ->values()
+            ->all();
+    }
 
-        return [
-            'name' => (string) ($data['name'] ?? ''),
-            'slug' => (string) ($data['slug'] ?? ''),
-            'url' => isset($data['url']) && is_string($data['url'])
-                ? $this->normalizePageUrl($data['url'])
-                : '',
-            'layout' => (string) ($data['layout'] ?? ''),
-            'sections' => is_array($data['sections'] ?? null) ? $data['sections'] : [],
-            'updated_at' => $updatedAt instanceof Carbon
-                ? $updatedAt->toIso8601String()
-                : (is_string($updatedAt) ? $updatedAt : now()->toIso8601String()),
-        ];
+    /**
+     * @param  list<array{block_slug?: string, values?: array<string, mixed>}>  $sections
+     */
+    public static function templateFromSections(array $sections): string
+    {
+        $lines = [];
+
+        foreach ($sections as $section) {
+            if (! is_array($section)) {
+                continue;
+            }
+
+            $blockSlug = $section['block_slug'] ?? null;
+
+            if (! is_string($blockSlug) || $blockSlug === '') {
+                continue;
+            }
+
+            $values = is_array($section['values'] ?? null) ? $section['values'] : [];
+            $lines[] = ThemeDirectiveParser::formatBlockDirective($blockSlug, $values);
+        }
+
+        return implode(PHP_EOL.PHP_EOL, $lines);
     }
 
     protected function normalizePageUrl(mixed $url): string
@@ -323,20 +482,5 @@ class PageStore extends ThemeFileStore
         }
 
         return strtolower(trim($url, '/'));
-    }
-
-    protected function slugFromUrl(string $normalizedUrl): string
-    {
-        if ($normalizedUrl === '') {
-            return self::HOME_PAGE_SLUG;
-        }
-
-        $slug = Str::slug($normalizedUrl);
-
-        if ($slug === '') {
-            throw new InvalidArgumentException('Page URL is invalid.');
-        }
-
-        return $slug;
     }
 }

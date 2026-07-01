@@ -1114,6 +1114,53 @@ body {
     background: transparent;
 }
 
+.loom-layout-fields-accordion .accordion-item,
+.loom-entity-imports-accordion .accordion-item {
+    border: 1px solid var(--loom-form-field-border);
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.loom-layout-fields-accordion .accordion-button,
+.loom-entity-imports-accordion .accordion-button {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--loom-form-label);
+    background: color-mix(in srgb, var(--loom-form-field-border) 30%, transparent);
+    box-shadow: none;
+}
+
+.loom-layout-fields-accordion .accordion-button:not(.collapsed),
+.loom-entity-imports-accordion .accordion-button:not(.collapsed) {
+    color: var(--loom-form-label);
+    background: color-mix(in srgb, var(--loom-form-field-border) 30%, transparent);
+}
+
+.loom-layout-fields-accordion .accordion-button:focus,
+.loom-entity-imports-accordion .accordion-button:focus {
+    box-shadow: none;
+}
+
+.loom-layout-fields-tabs .nav-link {
+    font-size: 0.875rem;
+}
+
+.loom-layout-fields-tab-content {
+    background: var(--bs-body-bg);
+}
+
+.loom-layout-fields-table__field-col {
+    width: 28%;
+}
+
+.loom-layout-fields-table__mode-col {
+    width: 14%;
+}
+
+.loom-layout-fields-table td .form-label {
+    display: none;
+}
+
 .dynamic-code-parameters__item-actions {
     display: flex;
     flex-direction: row;

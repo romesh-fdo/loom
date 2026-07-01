@@ -35,4 +35,11 @@ class Plugin extends PluginBase
             {{ registerForms }}
         ];
     }
+
+    public function registerFunctions(): array
+    {
+        return [
+            //
+        ];
+    }
 }

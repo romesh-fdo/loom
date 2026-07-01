@@ -1,25 +1,42 @@
-function slugifyPageUrl(name) {
-    return name
+function slugifyPageUrlSegment(segment) {
+    return segment
         .toLowerCase()
         .trim()
-        .replace(/[^a-z0-9\s/-]/g, '')
+        .replace(/[^a-z0-9\s-]/g, '')
         .replace(/[\s_]+/g, '-')
-        .replace(/\/+/g, '/')
         .replace(/-+/g, '-')
-        .replace(/^[/\s-]+|[/\s-]+$/g, '');
+        .replace(/^-+|-+$/g, '');
+}
+
+function slugifyPageUrl(name) {
+    return name
+        .split('/')
+        .map((segment) => {
+            const trimmed = segment.trim();
+
+            if (/^\{[a-z_][a-z0-9_]*\}$/.test(trimmed)) {
+                return trimmed.toLowerCase();
+            }
+
+            return slugifyPageUrlSegment(trimmed);
+        })
+        .filter((segment) => segment !== '')
+        .join('/')
+        .replace(/\/+/g, '/')
+        .replace(/^\/+|\/+$/g, '');
 }
 
 export function initPageForm() {
     const form = document.querySelector('[data-loom-form="pages-basic"]');
 
-    if (!form || form.dataset.pageFormInit === 'true') {
+    if (! form || form.dataset.pageFormInit === 'true') {
         return;
     }
 
     const nameInput = form.querySelector('#field-name');
     const urlInput = form.querySelector('#field-url');
 
-    if (!nameInput || !urlInput) {
+    if (! nameInput || ! urlInput) {
         return;
     }
 
@@ -42,7 +59,7 @@ export function initPageForm() {
         urlDirty = true;
     });
 
-    if (!isEdit && nameInput.value.trim() !== '' && urlInput.value.trim() === '') {
+    if (! isEdit && nameInput.value.trim() !== '' && urlInput.value.trim() === '') {
         syncUrlFromName();
     }
 }

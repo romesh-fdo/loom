@@ -4,6 +4,8 @@ import { initAdminSaveShortcut } from './admin-save';
 import { initDynamicCodeEditors } from './dynamic-code-editor';
 import { initPluginBuilder } from './plugin-builder';
 import { initPageBlockRepeater } from './page-block-repeater';
+import { initPageEntityImports } from './page-entity-imports';
+import { initPageLayoutFields } from './page-layout-fields';
 import { initPageForm } from './page-form';
 import { initRichTextEditors } from './rich-text-editor';
 import { initMediaFinders } from './media-finder';
@@ -282,6 +284,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initFilePreviews();
     initRepeaters();
     initPageBlockRepeater();
+    initPageEntityImports();
+    initPageLayoutFields();
     initPageForm();
     initRichTextEditors();
     initMediaFinders();

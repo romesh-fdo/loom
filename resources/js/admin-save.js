@@ -1,4 +1,6 @@
+import { applyFormValidationErrors } from './admin-form-validation';
 import { showAdminToast, setActionSubmitLabel } from './admin-notifications';
+import { enableLayoutFieldsForSubmit } from './page-layout-fields';
 import { syncCodeEditors } from './code-editor';
 import { syncDynamicCodeEditors } from './dynamic-code-editor';
 import { syncRichTextEditors } from './rich-text-editor';
@@ -28,6 +30,12 @@ export async function saveAdminForm(form) {
     syncCodeEditors(form);
     syncDynamicCodeEditors(form);
     syncRichTextEditors(form);
+
+    const layoutFieldsContainer = form.querySelector('[data-page-layout-fields]');
+
+    if (layoutFieldsContainer) {
+        enableLayoutFieldsForSubmit(layoutFieldsContainer);
+    }
 
     form.dataset.saving = 'true';
 
@@ -59,6 +67,10 @@ export async function saveAdminForm(form) {
         }
 
         if (! response.ok) {
+            if (payload?.errors) {
+                applyFormValidationErrors(form, payload.errors);
+            }
+
             showAdminToast(formatValidationMessage(payload), 'error');
 
             return false;

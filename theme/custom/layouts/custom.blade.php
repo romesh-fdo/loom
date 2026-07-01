@@ -10,7 +10,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-     @segment('meta', ['author' => 'Sarab', 'description' => 'Sarab - Fast Food & Restaurant HTML Template'])
+     @segment('meta', [])
      @segment('header/seo', [])
      @segment('css', [])
   </head>

@@ -1,7 +1,7 @@
 @php
     $allowedTypes = [
         'text', 'email', 'url', 'password', 'number', 'textarea', 'select',
-        'checkbox', 'radio', 'date', 'datetime-local', 'file', 'media_finder', 'hidden', 'code', 'dynamic_code', 'color', 'repeater', 'block_repeater',
+        'checkbox', 'radio', 'date', 'datetime-local', 'file', 'media_finder', 'hidden', 'code', 'dynamic_code', 'color', 'repeater', 'block_repeater', 'entity_imports', 'layout_fields',
     ];
     $namePrefix = $namePrefix ?? null;
     $fieldValues = $fieldValues ?? [];
@@ -56,6 +56,11 @@
                     'addLabel' => $field['addLabel'] ?? null,
                     'itemLabel' => $field['itemLabel'] ?? null,
                     'blocksCatalog' => $field['blocksCatalog'] ?? ($blocksCatalog ?? []),
+                    'layoutsCatalog' => $field['layoutsCatalog'] ?? ($layoutsCatalog ?? []),
+                    'selectedLayout' => $field['selectedLayout'] ?? null,
+                    'entityImports' => $field['entityImports'] ?? ($entityImports ?? []),
+                    'pluginsFunctionsCatalog' => $field['pluginsFunctionsCatalog'] ?? ($pluginsFunctionsCatalog ?? []),
+                    'pageUrl' => $field['pageUrl'] ?? null,
                     'inputGroupPrefix' => $field['inputGroupPrefix'] ?? null,
                 ] : null;
             @endphp

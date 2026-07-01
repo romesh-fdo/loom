@@ -233,6 +233,131 @@ class PluginManager
         return $plugin->{$method}(...$arguments);
     }
 
+    /**
+     * @return list<array{identifier: string, label: string, functions: array<string, array<string, mixed>>}>
+     */
+    public function getFunctionsCatalog(): array
+    {
+        if (! $this->registered) {
+            $this->registerAll();
+        }
+
+        $catalog = [];
+
+        foreach ($this->plugins as $identifier => $plugin) {
+            $functions = $this->resolvePluginFunctions($plugin);
+
+            if ($functions === []) {
+                continue;
+            }
+
+            $details = $plugin->pluginDetails();
+            $catalog[] = [
+                'identifier' => $identifier,
+                'label' => (string) ($details['name'] ?? $identifier),
+                'functions' => $this->normalizeFunctionDefinitions($functions),
+            ];
+        }
+
+        return $catalog;
+    }
+
+    /**
+     * @param  array<string, mixed>  $arguments
+     */
+    public function callFunction(string $identifier, string $functionKey, array $arguments = []): mixed
+    {
+        $plugin = $this->getPlugin($identifier);
+
+        if ($plugin === null) {
+            return null;
+        }
+
+        $functions = $this->resolvePluginFunctions($plugin);
+        $definition = $functions[$functionKey] ?? null;
+
+        if (! is_array($definition)) {
+            return null;
+        }
+
+        $handler = (string) ($definition['handler'] ?? $functionKey);
+
+        if (str_starts_with($handler, PluginModelFunctions::HANDLER_PREFIX)) {
+            $method = substr($handler, strlen(PluginModelFunctions::HANDLER_PREFIX));
+
+            return PluginModelFunctions::call($plugin, $method, $definition, $arguments);
+        }
+
+        if ($handler === '' || ! method_exists($plugin, $handler)) {
+            return null;
+        }
+
+        return $plugin->{$handler}(...array_values($arguments));
+    }
+
+    public function getFunctionDefinition(string $identifier, string $functionKey): ?array
+    {
+        $plugin = $this->getPlugin($identifier);
+
+        if ($plugin === null) {
+            return null;
+        }
+
+        $functions = $this->resolvePluginFunctions($plugin);
+        $definition = $functions[$functionKey] ?? null;
+
+        return is_array($definition) ? $this->normalizeFunctionDefinition($functionKey, $definition) : null;
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    protected function resolvePluginFunctions(PluginBase $plugin): array
+    {
+        $defaults = PluginModelFunctions::definitionsFor($plugin);
+        $custom = $plugin->registerFunctions();
+
+        return array_merge($defaults, $custom);
+    }
+
+    /**
+     * @param  array<string, array<string, mixed>>  $functions
+     * @return array<string, array<string, mixed>>
+     */
+    protected function normalizeFunctionDefinitions(array $functions): array
+    {
+        $normalized = [];
+
+        foreach ($functions as $key => $definition) {
+            if (! is_string($key) || $key === '' || ! is_array($definition)) {
+                continue;
+            }
+
+            $normalized[$key] = $this->normalizeFunctionDefinition($key, $definition);
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * @param  array<string, mixed>  $definition
+     * @return array<string, mixed>
+     */
+    protected function normalizeFunctionDefinition(string $functionKey, array $definition): array
+    {
+        $parameters = is_array($definition['parameters'] ?? null) ? $definition['parameters'] : [];
+        $returns = is_array($definition['returns'] ?? null) ? $definition['returns'] : [];
+
+        return [
+            'label' => (string) ($definition['label'] ?? $functionKey),
+            'handler' => (string) ($definition['handler'] ?? $functionKey),
+            'builtin' => (bool) ($definition['builtin'] ?? false),
+            'model_field' => isset($definition['model_field']) ? (string) $definition['model_field'] : null,
+            'parameters' => array_values(array_filter($parameters, 'is_array')),
+            'returns' => array_values(array_filter($returns, 'is_array')),
+        ];
+    }
+
     public function getNavigation(): array
     {
         if (! $this->registered) {

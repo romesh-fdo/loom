@@ -4,7 +4,6 @@ namespace Loom\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Loom\Builder\TableNames;
 use Loom\Support\ThemeContent\BlockStore;
@@ -17,8 +16,11 @@ class ExportThemeContentCommand extends Command
 
     protected $description = 'Export loom_blocks and loom_pages database rows to theme files';
 
-    public function handle(ThemeManager $themes, BlockStore $blocks): int
-    {
+    public function handle(
+        ThemeManager $themes,
+        BlockStore $blocks,
+        PageStore $pages,
+    ): int {
         $blocksTable = TableNames::applyPrefix('blocks');
         $pagesTable = TableNames::applyPrefix('pages');
 
@@ -116,20 +118,15 @@ class ExportThemeContentCommand extends Command
                     'name' => (string) $row->name,
                     'slug' => $slug,
                     'url' => $url,
+                    'layout' => (string) ($row->layout ?? ''),
+                    'layout_fields' => is_array(json_decode((string) ($row->layout_fields ?? ''), true))
+                        ? json_decode((string) ($row->layout_fields ?? ''), true)
+                        : [],
                     'sections' => $normalizedSections,
                     'updated_at' => $row->updated_at ?? now()->toIso8601String(),
                 ];
 
-                $pageDir = $dir.'/'.$slug;
-
-                if (! is_dir($pageDir)) {
-                    File::makeDirectory($pageDir, 0755, true);
-                }
-
-                File::put(
-                    $pageDir.'/'.PageStore::PAGE_JSON_FILENAME,
-                    json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES).PHP_EOL
-                );
+                $pages->create($payload, $themeSlug);
 
                 $exportedPages++;
             }

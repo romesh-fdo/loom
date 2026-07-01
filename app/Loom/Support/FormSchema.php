@@ -3,7 +3,6 @@
 namespace Loom\Support;
 
 use Loom\Features\Contracts\FormModule;
-use Loom\Support\ModuleResolver;
 
 class FormSchema
 {
@@ -44,7 +43,7 @@ class FormSchema
             if (in_array($name, $persistedFields, true)) {
                 $fieldType = $fields[$name]['type'] ?? $fields[$name]['input'] ?? 'text';
 
-                if (in_array($fieldType, ['repeater', 'block_repeater'], true)) {
+                if (in_array($fieldType, ['repeater', 'block_repeater', 'entity_imports', 'layout_fields'], true)) {
                     $default = $values[$name]
                         ?? (is_object($model) ? ($model->{$name} ?? null) : null)
                         ?? ($fields[$name]['value'] ?? []);
@@ -162,7 +161,7 @@ class FormSchema
 
             $type = $field['type'] ?? $field['input'] ?? 'text';
 
-            if (in_array($type, ['repeater', 'block_repeater'], true)) {
+            if (in_array($type, ['repeater', 'block_repeater', 'entity_imports', 'layout_fields'], true)) {
                 if (! empty($field['validation']) && is_array($field['validation'])) {
                     $rules[$name] = $field['validation'];
                 }

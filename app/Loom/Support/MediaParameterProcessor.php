@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Loom\Support\ThemeContent\PageLayoutFieldsComposer;
 
 class MediaParameterProcessor
 {
@@ -159,6 +160,62 @@ class MediaParameterProcessor
         }
 
         return $sections;
+    }
+
+    /**
+     * @param  array<string, array<string, mixed>>  $layoutFields
+     * @param  callable(string): list<array<string, mixed>>  $parametersForSegment
+     * @return array<string, array<string, mixed>>
+     */
+    public function processLayoutFields(array $layoutFields, Request $request, callable $parametersForSegment): array
+    {
+        foreach ($layoutFields as $segmentPath => $fields) {
+            if (! is_string($segmentPath) || ! is_array($fields)) {
+                continue;
+            }
+
+            $parameters = $parametersForSegment($segmentPath);
+            $flatFields = [];
+
+            foreach ($fields as $name => $value) {
+                if (! is_string($name)) {
+                    continue;
+                }
+
+                if ($name === '_mode') {
+                    continue;
+                }
+
+                if (is_array($value) && PageLayoutFieldsComposer::isSubmittedDynamicField($value)) {
+                    $flatFields[$name] = $value;
+
+                    continue;
+                }
+
+                if (is_array($value) && isset($value['dynamic'])) {
+                    $flatFields[$name] = $value;
+
+                    continue;
+                }
+
+                if (is_array($value) && array_key_exists('static', $value)) {
+                    $flatFields[$name] = $value['static'];
+
+                    continue;
+                }
+
+                $flatFields[$name] = $value;
+            }
+
+            $layoutFields[$segmentPath] = $this->processValues(
+                $parameters,
+                $flatFields,
+                $request,
+                "layout_fields.{$segmentPath}"
+            );
+        }
+
+        return $layoutFields;
     }
 
     /**

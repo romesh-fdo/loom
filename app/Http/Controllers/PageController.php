@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Response;
 use Loom\Http\Controllers\Concerns\ResolvesActiveTheme;
 use Loom\Support\ThemeContent\LayoutStore;
+use Loom\Support\ThemeContent\PageEntityResolver;
 use Loom\Support\ThemeContent\PageStore;
 use Loom\Support\ThemeContent\ThemeLayoutRenderer;
 use Loom\Support\ThemeContent\ThemePageRenderer;
@@ -21,16 +22,26 @@ class PageController extends Controller
         protected ThemePageRenderer $renderer,
         protected ThemeLayoutRenderer $layoutRenderer,
         protected ThemeManager $themes,
+        protected PageEntityResolver $entityResolver,
     ) {}
 
     public function show(?string $path = null): Response
     {
         $path = is_string($path) ? $path : '';
         $themeSlug = $this->activeThemeSlug();
-        $page = $this->pages->findByUrl($path, $themeSlug);
+        $match = $this->pages->matchPath($path, $themeSlug);
 
-        if ($page === null) {
+        if ($match === null) {
             throw new NotFoundHttpException;
+        }
+
+        $page = $match->page;
+        $route = request()->route();
+
+        if ($route !== null) {
+            foreach ($match->params as $name => $value) {
+                $route->setParameter($name, $value);
+            }
         }
 
         $layoutSlug = (string) ($page->layout ?? '');
@@ -41,7 +52,9 @@ class PageController extends Controller
         }
 
         $content = $this->renderer->render($page, $themeSlug);
-        $html = $this->layoutRenderer->render($layout, $content, $themeSlug);
+        $entityImports = is_array($page->entity_imports ?? null) ? $page->entity_imports : [];
+        $bindings = $this->entityResolver->resolve($entityImports, request());
+        $html = $this->layoutRenderer->render($layout, $content, $themeSlug, $page, $bindings);
 
         return response($html)->header('Content-Type', 'text/html; charset=UTF-8');
     }

@@ -4,6 +4,7 @@ namespace Loom\Console;
 
 use Illuminate\Console\Command;
 use Loom\Support\ThemeContent\BlockStore;
+use Loom\Support\ThemeContent\PageStore;
 use Loom\Support\ThemeContent\SegmentStore;
 use Loom\Support\ThemeManager;
 
@@ -11,10 +12,14 @@ class ConvertThemeBladesCommand extends Command
 {
     protected $signature = 'loom:convert-theme-blades';
 
-    protected $description = 'Convert legacy block/segment JSON files to blade.php format';
+    protected $description = 'Convert legacy block/segment/page JSON files to blade.php format';
 
-    public function handle(BlockStore $blocks, SegmentStore $segments, ThemeManager $themes): int
-    {
+    public function handle(
+        BlockStore $blocks,
+        SegmentStore $segments,
+        PageStore $pages,
+        ThemeManager $themes,
+    ): int {
         $converted = 0;
 
         foreach ($themes->all() as $theme) {
@@ -26,6 +31,7 @@ class ConvertThemeBladesCommand extends Command
 
             $blocks->all($slug);
             $segments->all($slug);
+            $pages->all($slug);
             $converted++;
         }
 

@@ -56,6 +56,18 @@ abstract class PluginBase implements FormModule
         return [];
     }
 
+    /**
+     * Register custom callable functions for page entity imports.
+     * These are merged with auto-generated model functions (getById, getFirst, etc.).
+     * Custom entries override defaults when the function key matches.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public function registerFunctions(): array
+    {
+        return [];
+    }
+
     public function getPluginPath(): string
     {
         return $this->path;

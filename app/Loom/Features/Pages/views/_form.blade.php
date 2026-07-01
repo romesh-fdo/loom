@@ -29,6 +29,9 @@
             'fields' => $formPanel['fields'] ?? [],
             'formScope' => true,
             'blocksCatalog' => $blocksCatalog ?? [],
+            'layoutsCatalog' => $layoutsCatalog ?? [],
+            'entityImports' => $entityImports ?? [],
+            'pluginsFunctionsCatalog' => $pluginsFunctionsCatalog ?? [],
         ])
     @endforeach
 

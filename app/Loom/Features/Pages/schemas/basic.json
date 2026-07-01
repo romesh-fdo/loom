@@ -29,6 +29,20 @@
             "section": "page",
             "rowClass": "row g-3 mb-3",
             "fields": [
+                { "name": "entity_imports", "colClass": "col-12" }
+            ]
+        },
+        {
+            "section": "page",
+            "rowClass": "row g-3 mb-3",
+            "fields": [
+                { "name": "layout_fields", "colClass": "col-12" }
+            ]
+        },
+        {
+            "section": "page",
+            "rowClass": "row g-3 mb-3",
+            "fields": [
                 { "name": "sections", "colClass": "col-12" }
             ]
         }
@@ -56,11 +70,11 @@
             "wrapperClass": "mb-0",
             "colClass": "col-md-6",
             "labelClass": "form-label",
-            "placeholder": "/ or about-us",
+            "placeholder": "/ or about-us or products/{id}",
             "inputGroupPrefix": "/",
-            "help": "URL path (lowercase letters, numbers, hyphens, and slashes). Use / for the site homepage. Auto-filled from the page name on create.",
+            "help": "URL path (lowercase letters, numbers, hyphens, slashes, and {placeholder} segments). Use / for the site homepage. Example: products/{id}",
             "required": true,
-            "validation": ["required", "string", "max:255", "regex:/^\\/?(?:[a-z0-9]+(?:-[a-z0-9]+)*(?:\\/[a-z0-9]+(?:-[a-z0-9]+)*)*)?$/"]
+            "validation": ["required", "string", "max:255", "regex:/^\\/?(?:[a-z0-9]+(?:-[a-z0-9]+)*|\\{[a-z_][a-z0-9_]*\\})(?:\\/(?:[a-z0-9]+(?:-[a-z0-9]+)*|\\{[a-z_][a-z0-9_]*\\}))*$/"]
         },
         "layout": {
             "section": "page",
@@ -75,6 +89,30 @@
             "help": "The theme layout used to render this page on the public site.",
             "required": true,
             "validation": ["required", "string", "max:255"]
+        },
+        "entity_imports": {
+            "section": "page",
+            "type": "entity_imports",
+            "label": "Entity imports",
+            "id": "field-entity-imports",
+            "wrapperClass": "mb-0",
+            "colClass": "col-12",
+            "labelClass": "form-label",
+            "help": "Import data from plugin functions into variables that layout fields can reference.",
+            "addLabel": "Add import",
+            "itemLabel": "Import",
+            "validation": ["nullable", "array"]
+        },
+        "layout_fields": {
+            "section": "page",
+            "type": "layout_fields",
+            "label": "Layout fields",
+            "id": "field-layout-fields",
+            "wrapperClass": "mb-0",
+            "colClass": "col-12",
+            "labelClass": "form-label",
+            "help": "Configure values for layout segments on this page (e.g. SEO meta tags).",
+            "validation": ["nullable", "array"]
         },
         "sections": {
             "section": "page",

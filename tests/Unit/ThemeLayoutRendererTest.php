@@ -66,4 +66,53 @@ class ThemeLayoutRendererTest extends TestCase
         $this->assertStringContainsString('/theme/custom/assets/css/style.css', $html);
         $this->assertStringNotContainsString('@assets', $html);
     }
+
+    public function test_it_merges_page_layout_fields_into_segments(): void
+    {
+        $segment = new ThemeFileRecord('meta', [
+            'name' => 'meta',
+            'slug' => 'meta',
+            'enabled' => true,
+            'code' => [
+                'template' => '<meta name="author" content="{{ $segmentData[\'author\'] }}">',
+                'parameters' => [
+                    ['name' => 'author', 'type' => 'text', 'default' => 'Default Author'],
+                    ['name' => 'description', 'type' => 'text', 'default' => 'Default Description'],
+                ],
+            ],
+        ]);
+
+        $segments = Mockery::mock(SegmentStore::class);
+        $segments->shouldReceive('find')
+            ->once()
+            ->with('meta', 'custom')
+            ->andReturn($segment);
+
+        $themes = Mockery::mock(ThemeManager::class);
+        $themes->shouldReceive('activeSlug')->andReturn('custom');
+
+        $renderer = new ThemeLayoutRenderer($segments, $themes);
+
+        $layout = new ThemeFileRecord('custom', [
+            'name' => 'Custom',
+            'slug' => 'custom',
+            'code' => "@segment('meta', ['author' => 'Layout Author'])",
+        ]);
+
+        $page = new ThemeFileRecord('home', [
+            'name' => 'Home',
+            'slug' => 'home',
+            'layout_fields' => [
+                'meta' => [
+                    'author' => 'Page Author',
+                    'description' => 'Page Description',
+                ],
+            ],
+        ]);
+
+        $html = $renderer->render($layout, '', 'custom', $page);
+
+        $this->assertStringContainsString('content="Page Author"', $html);
+        $this->assertStringNotContainsString('Layout Author', $html);
+    }
 }
